@@ -110,6 +110,22 @@
 				transform: rotate(45deg);
 			}
 
+			/* Games Button */
+			#games-nav-btn {
+				position: absolute;
+				top: 25px;
+				left: 25px;
+				text-decoration: none;
+				font-size: 1.5rem;
+				cursor: pointer;
+				opacity: 0.6;
+				transition: 0.3s;
+			}
+			#games-nav-btn:hover {
+				opacity: 1;
+				transform: scale(1.2);
+			}
+
 			/* Settings Modal */
 			#settings-modal {
 				display: none;
@@ -181,7 +197,8 @@
 	</head>
 	<body>
 		<div class="container">
-			<button id="settings-btn">⚙️</button>
+			<a href="games.html" id="games-nav-btn" title="Games">🎮</a>
+			<button id="settings-btn" title="Settings">⚙️</button>
 			<div class="logo-wrapper">
 				<h1>PLAZMA</h1>
 				<img src="logo.png" class="main-logo" alt="Plazma Icon" />
