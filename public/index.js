@@ -96,6 +96,7 @@ form.addEventListener('submit', async (event) => {
 
 	const isCloaked = localStorage.getItem('plazma-cloak') === 'true';
 
+	// replace cloaked about:blank iframe src to respect selected engine/path
 	if (isCloaked) {
 		// about:blank cloaking logic (keeps original behavior)
 		const win = window.open('about:blank', '_blank');
@@ -113,7 +114,7 @@ form.addEventListener('submit', async (event) => {
 			border: 'none',
 			background: 'white',
 		});
-		iframe.src = location.origin + '/scram/' + btoa(url);
+		iframe.src = getProxyUrl(url);
 		win.document.body.appendChild(iframe);
 		return;
 	}
@@ -268,10 +269,38 @@ form.addEventListener('submit', async (event) => {
 	function getProxyUrl(u){
 		const engine = engineSelect.value || 'scramjet';
 		const basePath = proxyPathInput.value && proxyPathInput.value.trim() ? proxyPathInput.value.trim() : (engine === 'scramjet' ? '/scram/' : '/ultraviolet/');
-		// ensure leading slash
 		const path = basePath.startsWith('/') ? basePath : '/' + basePath;
-		// simple conventions: both engines accept btoa payload in this UI
 		return location.origin + path + btoa(u);
+	}
+
+	// new: try multiple proxy paths and detect "blocked" pages
+	async function tryFetchProxied(targetUrl, candidatePaths) {
+		candidatePaths = candidatePaths || [];
+		// ensure user path first then sensible defaults
+		const userPath = (proxyPathInput.value && proxyPathInput.value.trim()) ? proxyPathInput.value.trim() : null;
+		const defaults = ['/scram/', '/ultraviolet/', '/proxy/'];
+		const tried = [];
+		if (userPath) candidatePaths.unshift(userPath);
+		for (const p of [...new Set([...candidatePaths, ...defaults])]) {
+			const path = p.startsWith('/') ? p : '/' + p;
+			const url = location.origin + path + btoa(targetUrl);
+			tried.push(path);
+			try {
+				const res = await fetch(url);
+				const text = await res.text();
+				// detect common "blocked" indicators
+				const blockedRx = /Your organization has blocked access|blocked access|Access Denied|This site is blocked|403 Forbidden/i;
+				if (!res.ok || blockedRx.test(text)) {
+					// try next
+					continue;
+				}
+				return { ok: true, text, path, url, res };
+			} catch (e) {
+				// network error - try next
+				continue;
+			}
+		}
+		return { ok: false, tried };
 	}
 
 	// crawler + cache (no SAMPLE_GAMES fallback)
@@ -282,9 +311,17 @@ form.addEventListener('submit', async (event) => {
 			onProgress && onProgress(page, maxPages);
 			const listUrl = base + '/t/games?page=' + page;
 			try {
-				const res = await fetch(getProxyUrl(listUrl));
-				if(!res.ok) break;
-				const txt = await res.text();
+				// try fetching via multiple proxy endpoints and detect blocking
+				const probe = await tryFetchProxied(listUrl);
+				if (!probe.ok) {
+					// if nothing worked, stop crawling and surface the issue
+					statusEl.textContent = 'Blocked or no proxy reachable. Try changing proxy path/engine.';
+					break;
+				}
+				const txt = probe.text;
+				// optionally record which proxy path worked
+				localStorage.setItem('last-proxy-used', probe.path);
+
 				const doc = new DOMParser().parseFromString(txt,'text/html');
 				const anchors = Array.from(doc.querySelectorAll('a')).filter(a=>{
 					const href = a.getAttribute('href') || '';
