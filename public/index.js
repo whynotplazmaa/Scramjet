@@ -406,44 +406,15 @@ form.addEventListener('submit', async (event) => {
 
 	// open proxied game in a cloaked fullscreen window - respects engine/proxy settings via getProxyUrl
 	async function openFullscreenGame(targetUrl){
-		const prox = getProxyUrl(targetUrl);
-		// attempt to detect inner iframe src via proxied doc - best-effort
-		let inner = null;
+		// navigate to games.html in the same tab and pass the b64-encoded target
 		try {
-			const res = await fetch(prox);
-			if(res.ok){
-				const txt = await res.text();
-				const doc = new DOMParser().parseFromString(txt,'text/html');
-				const frame = doc.querySelector('iframe') || doc.querySelector('div[class*="game"] iframe') || doc.querySelector('#game iframe');
-				if(frame){
-					inner = frame.getAttribute('src') || frame.getAttribute('data-src') || frame.src || null;
-					if(inner && !inner.startsWith('http')){
-						try{ inner = new URL(inner, targetUrl).href }catch(e){}
-					}
-				}
-			}
-		} catch(e){
-			console.warn('meta fetch failed', e);
+			const enc = encodeURIComponent(btoa(targetUrl));
+			location.href = location.origin + '/games.html?u=' + enc;
+		} catch (e) {
+			// fallback: store in localStorage if btoa fails for some input
+			localStorage.setItem('selected-game', JSON.stringify({ url: targetUrl }));
+			location.href = location.origin + '/games.html';
 		}
-		const finalSrc = inner ? (inner.startsWith('http') ? inner : getProxyUrl(inner)) : prox;
-		const win = window.open('about:blank', '_blank');
-		if(!win){ alert('Popup blocked! Allow popups.'); return; }
-		win.document.title = 'Game';
-		const s = win.document.createElement('style');
-		s.textContent = 'html,body{width:100%;height:100%;margin:0;background:#000} iframe#g{position:fixed;inset:0;width:100%;height:100%;border:0} button#c{position:fixed;right:12px;top:12px;z-index:99999;background:linear-gradient(45deg,#7b1fa2,#ec407a);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}';
-		win.document.head.appendChild(s);
-		const iframe = win.document.createElement('iframe');
-		iframe.id = 'g';
-		iframe.allow = 'fullscreen; autoplay; encrypted-media; picture-in-picture';
-		iframe.src = finalSrc;
-		win.document.body.appendChild(iframe);
-		const close = win.document.createElement('button');
-		close.id = 'c'; close.textContent = '✕';
-		close.onclick = ()=> win.close();
-		win.document.body.appendChild(close);
-		close.addEventListener('dblclick', async ()=> {
-			try{ if(win.document.documentElement.requestFullscreen) await win.document.documentElement.requestFullscreen(); }catch(e){}
-		});
 	}
 
 	// initial load of saved settings

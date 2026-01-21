@@ -5,128 +5,155 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Games</title>
 <style>
-:root{--bg:#071026;--card:#0b1220;--muted:#9aa4b2;--accent:#7b1fa2}
+:root{--bg:#071026;--muted:#9aa4b2}
 html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#071026 0%, #07182a 100%);color:#fff}
-.header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px}
-.title{font-size:20px;font-weight:600}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:18px 24px}
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:10px;cursor:pointer;overflow:hidden;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column}
-.thumb{background:#071026;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.name{margin-top:10px;font-size:15px;color:#fff;line-height:1.2}
-.meta{font-size:12px;color:var(--muted);margin-top:6px}
-.small-note{font-size:13px;color:var(--muted);padding:0 24px 8px}
-.overlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:9999}
-.overlay.show{display:flex}
-.overlay .frame{position:relative;width:100%;height:100%;max-width:1600px;max-height:100vh;background:#000}
-.frame iframe{width:100%;height:100%;border:0;background:#000}
-.frame .bar{position:absolute;top:12px;right:12px;z-index:1001;display:flex;gap:8px}
-.btn{background:rgba(0,0,0,0.6);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px}
+.title{font-size:18px;font-weight:700}
+.container{padding:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:10px;cursor:pointer;border:1px solid rgba(255,255,255,0.03)}
+.thumb{height:120px;border-radius:8px;overflow:hidden;background:#071026;display:flex;align-items:center;justify-content:center}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.name{margin-top:8px;font-weight:700}
+.meta{font-size:12px;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center}
+.btn{background:linear-gradient(45deg,#7b1fa2,#ec407a);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+.viewer{position:fixed;inset:0;background:#000;display:flex;flex-direction:column}
+.viewer .bar{padding:10px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.viewer iframe{flex:1;border:0;width:100%;}
+.small{font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
-<div class="header">
-	<div class="title">Games</div>
-	<div class="title" style="font-size:13px;color:var(--muted)">Fetched via proxy</div>
-</div>
-<div class="small-note">Click a card to open the game. Thumbnails and names fetched via the local /scram/ proxy.</div>
-<div class="grid" id="games-grid"></div>
-
-<div id="overlay" class="overlay" aria-hidden="true">
-	<div class="frame" id="frame">
-		<div class="bar">
-			<button id="fs-btn" class="btn">Fullscreen</button>
-			<button id="close-btn" class="btn">Close</button>
+	<div class="header">
+		<div class="title">Games</div>
+		<div class="controls">
+			<button class="btn" id="back-btn" style="display:none">Back to list</button>
+			<span class="small">Powered by proxy engine (choose in main page)</span>
 		</div>
-		<iframe id="game-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock" allow="fullscreen; autoplay"></iframe>
 	</div>
-</div>
+	<div class="container" id="list-root"></div>
 
 <script>
 (function(){
-	const grid = document.getElementById('games-grid');
-	const overlay = document.getElementById('overlay');
-	const iframe = document.getElementById('game-iframe');
-	const closeBtn = document.getElementById('close-btn');
-	const fsBtn = document.getElementById('fs-btn');
+	const qs = new URLSearchParams(location.search);
+	const enc = qs.get('u');
+	const listRoot = document.getElementById('list-root');
 
-	// sample list; you can add more CrazyGames or other URLs
-	const games = [
-		'https://www.crazygames.com/game/fireboy-and-watergirl',
-		'https://www.crazygames.com/game/uno-online',
-		'https://www.crazygames.com/game/stickman-hook',
-		'https://www.crazygames.com/game/archer-2'
-	];
+	function getStoredEngine(){ return localStorage.getItem('proxy-engine') || 'scramjet'; }
+	function getStoredPath(){ return localStorage.getItem('proxy-path') || '/scram/'; }
+	function getProxyUrl(target){
+		const engine = getStoredEngine();
+		const basePath = (localStorage.getItem('proxy-path') || (engine==='scramjet' ? '/scram/' : '/ultraviolet/')).trim();
+		const path = basePath.startsWith('/') ? basePath : '/' + basePath;
+		return location.origin + path + btoa(target);
+	}
 
-	function proxied(u){ return location.origin + '/scram/' + btoa(u); }
+	function renderList(list){
+		listRoot.innerHTML = '';
+		const grid = document.createElement('div'); grid.className = 'grid';
+		for(const g of list){
+			const c = document.createElement('div'); c.className = 'card';
+			const t = document.createElement('div'); t.className = 'thumb';
+			const img = document.createElement('img'); img.alt = g.title||g.url;
+			img.src = g.thumb || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220"><rect width="100%" height="100%" fill="%23071b26"/></svg>';
+			t.appendChild(img);
+			const name = document.createElement('div'); name.className='name'; name.textContent = g.title||g.url;
+			const meta = document.createElement('div'); meta.className='meta'; meta.textContent = g.url;
+			c.appendChild(t); c.appendChild(name); c.appendChild(meta);
+			c.onclick = ()=> {
+				// navigate to the viewer (same page) with encoded url
+				const u = encodeURIComponent(btoa(g.url));
+				location.href = location.origin + '/games.html?u=' + u;
+			};
+			grid.appendChild(c);
+		}
+		listRoot.appendChild(grid);
+	}
 
-	async function fetchMeta(url){
-		try{
-			const res = await fetch(proxied(url));
-			const txt = await res.text();
-			const doc = new DOMParser().parseFromString(txt,'text/html');
-			const ogTitle = doc.querySelector('meta[property="og:title"]') || doc.querySelector('meta[name="twitter:title"]');
-			const ogImage = doc.querySelector('meta[property="og:image"]') || doc.querySelector('meta[name="twitter:image"]');
-			const title = (ogTitle && ogTitle.content) || doc.title || url;
-			let image = ogImage && ogImage.content ? ogImage.content : null;
-			if(image && !image.startsWith('http')) {
-				try{ image = new URL(image, url).href }catch(e){}
+	// if query param provided -> show viewer
+	if(enc){
+		let target = null;
+		try { target = atob(decodeURIComponent(enc)); } catch(e) {
+			// maybe stored fallback
+			const sel = localStorage.getItem('selected-game');
+			if(sel) try{ target = JSON.parse(sel).url }catch(e){}
+		}
+		if(!target){
+			listRoot.innerHTML = '<div class="small" style="padding:18px">Invalid game parameter.</div>';
+		} else {
+			document.querySelector('#back-btn').style.display = '';
+			showViewer(target);
+		}
+	} else {
+		// show cached list from localStorage
+		const cached = localStorage.getItem('crazygames-all');
+		if(cached){
+			try{
+				const list = JSON.parse(cached);
+				renderList(list);
+			}catch(e){
+				listRoot.innerHTML = '<div class="small" style="padding:18px">Failed to parse cached list.</div>';
 			}
-			// try to detect inner iframe src that likely hosts the game
-			let inner = null;
-			const innerIframe = doc.querySelector('iframe') || doc.querySelector('div[class*="game"] iframe') || doc.querySelector('#game iframe');
-			if(innerIframe){
-				inner = innerIframe.getAttribute('src') || innerIframe.getAttribute('data-src') || innerIframe.src || null;
-				if(inner && !inner.startsWith('http')){
-					try{ inner = new URL(inner, url).href }catch(e){}
+		} else {
+			listRoot.innerHTML = '<div class="small" style="padding:18px">No game list cached. Open the main page Hub and click Refresh to crawl CrazyGames first.</div>';
+		}
+	}
+
+	document.getElementById('back-btn').addEventListener('click', ()=> {
+		// go back to list view
+		history.replaceState(null,'', location.pathname);
+		location.reload();
+	});
+
+	async function showViewer(target){
+		// build proxied URL using selected engine/path
+		const prox = getProxyUrl(target);
+		// create viewer DOM
+		listRoot.innerHTML = '';
+		const viewer = document.createElement('div'); viewer.className = 'viewer';
+		const bar = document.createElement('div'); bar.className = 'bar';
+		const left = document.createElement('div'); left.style.display='flex'; left.style.gap='8px';
+		const title = document.createElement('div'); title.textContent = target;
+		const fsBtn = document.createElement('button'); fsBtn.className='btn'; fsBtn.textContent='Fullscreen';
+		const closeBtn = document.createElement('button'); closeBtn.className='btn'; closeBtn.textContent='Close';
+		left.appendChild(title);
+		bar.appendChild(left);
+		const right = document.createElement('div');
+		right.appendChild(fsBtn); right.appendChild(closeBtn);
+		bar.appendChild(right);
+		const iframe = document.createElement('iframe');
+		iframe.allow = 'fullscreen; autoplay; encrypted-media; picture-in-picture';
+		iframe.src = prox;
+		viewer.appendChild(bar); viewer.appendChild(iframe);
+		listRoot.appendChild(viewer);
+
+		// attempt to fetch proxied doc and locate an inner game iframe to use directly (best-effort)
+		try {
+			const res = await fetch(prox);
+			if(res.ok){
+				const txt = await res.text();
+				const doc = new DOMParser().parseFromString(txt,'text/html');
+				const innerFrame = doc.querySelector('iframe') || doc.querySelector('div[class*="game"] iframe') || doc.querySelector('#game iframe');
+				if(innerFrame){
+					let inner = innerFrame.getAttribute('src') || innerFrame.getAttribute('data-src') || innerFrame.src || null;
+					if(inner){
+						if(!inner.startsWith('http')){
+							try{ inner = new URL(inner, target).href } catch(e){}
+						}
+						if(inner){
+							iframe.src = inner;
+						}
+					}
 				}
 			}
-			return { title, image, inner };
-		}catch(e){
-			return { title: url, image: null, inner: null };
-		}
+		} catch(e){}
+		// controls
+		fsBtn.addEventListener('click', async ()=> {
+			try{ if(iframe.requestFullscreen) await iframe.requestFullscreen(); else if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }catch(e){}
+		});
+		closeBtn.addEventListener('click', ()=> { history.replaceState(null,'', location.pathname); location.reload(); });
 	}
-
-	function makeCard(meta, url){
-		const el = document.createElement('div'); el.className='card';
-		const thumb = document.createElement('div'); thumb.className='thumb';
-		const img = document.createElement('img');
-		img.alt = meta.title || url;
-		img.src = meta.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220"><rect width="100%" height="100%" fill="%23071b26"/><text x="50%" y="50%" fill="%23fff" font-size="18" text-anchor="middle" alignment-baseline="middle">No Image</text></svg>';
-		thumb.appendChild(img);
-		const name = document.createElement('div'); name.className='name'; name.textContent = meta.title || url;
-		const metaEl = document.createElement('div'); metaEl.className='meta'; metaEl.textContent = 'CrazyGames / External';
-		el.appendChild(thumb); el.appendChild(name); el.appendChild(metaEl);
-		el.addEventListener('click', ()=> openGame(url, meta));
-		return el;
-	}
-
-	async function init(){
-		for(const url of games){
-			const placeholder = document.createElement('div'); placeholder.className='card';
-			placeholder.textContent = 'Loading...';
-			grid.appendChild(placeholder);
-			const meta = await fetchMeta(url);
-			const card = makeCard(meta, url);
-			grid.replaceChild(card, placeholder);
-		}
-	}
-
-	function openGame(url, meta){
-		overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
-		// prefer direct inner iframe src if available, otherwise proxied page
-		const src = meta.inner ? (meta.inner.startsWith('http') ? meta.inner : proxied(meta.inner)) : proxied(url);
-		iframe.src = src;
-	}
-
-	closeBtn.onclick = () => { overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); iframe.src = 'about:blank'; };
-	fsBtn.onclick = async () => {
-		const frame = document.getElementById('frame');
-		if(frame.requestFullscreen) await frame.requestFullscreen();
-		else if(frame.webkitRequestFullscreen) await frame.webkitRequestFullscreen();
-	};
-
-	init();
 })();
 </script>
 </body>
