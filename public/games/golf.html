@@ -1,0 +1,59 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mini Golf</title>
+<style>body,html{margin:0;height:100%}canvas{display:block;background:#e8f5e9;width:100%;height:100vh}</style>
+</head><body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+function resize(){canvas.width = innerWidth; canvas.height = innerHeight}
+addEventListener('resize', resize); resize();
+
+let ball = { x: 100, y: canvas.height-120, vx:0, vy:0, r:12 };
+let hole = { x: canvas.width-200, y: 120, r:18 };
+let friction = 0.995;
+
+canvas.addEventListener('click', (e)=>{
+  // aim from ball to click, apply velocity proportional to distance
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+  const dx = mx - ball.x, dy = my - ball.y;
+  const dist = Math.hypot(dx,dy);
+  if(dist<30){ ball.vx*=0.2; ball.vy*=0.2; return; }
+  const power = Math.min(dist/15, 12);
+  ball.vx = (dx/dist)*power; ball.vy = (dy/dist)*power;
+});
+
+function step(){
+  ball.x += ball.vx; ball.y += ball.vy;
+  ball.vx *= friction; ball.vy *= friction;
+  // bounds
+  if(ball.x<ball.r){ ball.x = ball.r; ball.vx*=-0.5 }
+  if(ball.y<ball.r){ ball.y = ball.r; ball.vy*=-0.5 }
+  if(ball.x>canvas.width-ball.r){ ball.x = canvas.width-ball.r; ball.vx*=-0.5 }
+  if(ball.y>canvas.height-ball.r){ ball.y = canvas.height-ball.r; ball.vy*=-0.5 }
+  // check hole
+  const d = Math.hypot(ball.x-hole.x, ball.y-hole.y);
+  if(d < hole.r){ // scored
+    ball.x = hole.x; ball.y = hole.y; ball.vx=0; ball.vy=0;
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // course
+  ctx.fillStyle='#a5d6a7'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  // hole
+  ctx.beginPath(); ctx.fillStyle='black'; ctx.arc(hole.x,hole.y,hole.r,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.fillStyle='white'; ctx.arc(hole.x,hole.y,hole.r-6,0,Math.PI*2); ctx.fill();
+  // ball
+  ctx.beginPath(); ctx.fillStyle='#ffeb3b'; ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+}
+
+function loop(){ step(); draw(); requestAnimationFrame(loop) }
+loop();
+</script>
+<button onclick="if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen()" style="position:fixed;top:10px;left:10px;z-index:999;background:#7b1fa2;color:white;border:none;padding:8px;border-radius:8px;">Fullscreen</button>
+</body></html>

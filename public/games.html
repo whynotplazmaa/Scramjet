@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Games — Plazma</title>
+<link rel="stylesheet" href="/index.css" />
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; background: #f6f6f6; }
+.container { max-width: 900px; margin: 0 auto; }
+input[type="text"] { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+button { padding: 10px 14px; margin-top: 8px; cursor: pointer; }
+.examples { margin-top: 12px; display:flex; gap:8px; flex-wrap:wrap; }
+.example { background:#fff; padding:8px 10px; border-radius:6px; cursor:pointer; border:1px solid #ddd; }
+.note { margin-top:10px; color:#666; font-size:13px; }
+</style>
+</head>
+<body>
+	<div class="container">
+		<h2>Load a Game (CrazyGames and others)</h2>
+		<p>Paste a game page URL (e.g. from crazygames.com). The page will be proxied and the player iframe/container will be expanded to fullscreen.</p>
+		<input id="game-url" type="text" placeholder="https://www.crazygames.com/game/example-game" />
+		<div>
+			<button id="load-game">Load Game (Fullscreen)</button>
+			<button id="open-inline">Open Inline (same tab)</button>
+		</div>
+		<div class="examples">
+			<div class="example" data-url="https://www.crazygames.com/game/fireboy-and-watergirl">CrazyGames: Fireboy & Watergirl</div>
+			<div class="example" data-url="https://www.crazygames.com/game/uno-online">CrazyGames: UNO</div>
+			<div class="example" data-url="https://www.crazygames.com/game/stickman-hook">CrazyGames: Stickman Hook</div>
+		</div>
+		<div class="note">If a site blocks direct loading, the proxy at /scram/ is used to allow same-origin manipulation. Some sites may still block embedding.</div>
+	</div>
+	<script src="/games.js"></script>
+</body>
+</html>
