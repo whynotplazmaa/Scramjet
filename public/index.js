@@ -177,6 +177,56 @@ form.addEventListener('submit', async (event) => {
 	}
 });
 
+// --- Global proxy helpers (usable before the Hub panel loads) ---
+function getProxyUrl(target, overridePath, overrideOrigin) {
+	// read persisted settings
+	const engine = localStorage.getItem('proxy-engine') || 'scramjet';
+	const basePath = (localStorage.getItem('proxy-path') || (engine === 'scramjet' ? '/scram/' : '/ultraviolet/')).trim();
+	const path = (overridePath && overridePath.trim()) ? overridePath.trim() : basePath;
+	const origin = (overrideOrigin && overrideOrigin.trim()) ? overrideOrigin.trim() : (localStorage.getItem('proxy-origin') || location.origin).trim();
+	const normalizedPath = path.startsWith('/') ? path : '/' + path;
+	return origin + normalizedPath + btoa(target);
+}
+
+async function tryFetchProxied(targetUrl, candidateOrigins = [], candidatePaths = []) {
+	// candidateOrigins: extra origins to try (strings)
+	// candidatePaths: extra paths to try (strings)
+	const userOrigin = (localStorage.getItem('proxy-origin') || '').trim();
+	const userPath = (localStorage.getItem('proxy-path') || '').trim();
+
+	const origins = [...new Set([userOrigin, ...candidateOrigins, location.origin].filter(Boolean))];
+	const paths = [...new Set([userPath, ...candidatePaths, '/scram/', '/ultraviolet/', '/proxy/'].filter(Boolean))];
+
+	for (const origin of origins) {
+		for (const path of paths) {
+			const p = path.startsWith('/') ? path : '/' + path;
+			const url = origin + p + btoa(targetUrl);
+			try {
+				const res = await fetch(url);
+				const text = await res.text();
+				const blockedRx = /Your organization has blocked access|blocked access|Access Denied|This site is blocked|403 Forbidden/i;
+				if (res.ok && !blockedRx.test(text)) {
+					return { ok: true, origin, path: p, url, res, text };
+				}
+			} catch (e) {
+				// try next
+				continue;
+			}
+		}
+	}
+	return { ok: false, triedOrigins: origins, triedPaths: paths };
+}
+
+async function probeProxyHealth() {
+	// quick check using example.com
+	try {
+		const probe = await tryFetchProxied('https://example.com/');
+		return probe;
+	} catch (e) {
+		return { ok: false, error: e };
+	}
+}
+
 // Replace the previous games panel with an enhanced fixed panel (no dragging), engine toggle and many features
 (function addEnhancedPanel(){
 	const CSS = `
@@ -266,13 +316,6 @@ form.addEventListener('submit', async (event) => {
 	proxyPathInput.addEventListener('change', ()=> localStorage.setItem(KEY_PATH, proxyPathInput.value));
 	maxPagesInput.addEventListener('change', ()=> localStorage.setItem(KEY_MAX, maxPagesInput.value));
 
-	function getProxyUrl(u){
-		const engine = engineSelect.value || 'scramjet';
-		const basePath = proxyPathInput.value && proxyPathInput.value.trim() ? proxyPathInput.value.trim() : (engine === 'scramjet' ? '/scram/' : '/ultraviolet/');
-		const path = basePath.startsWith('/') ? basePath : '/' + basePath;
-		return location.origin + path + btoa(u);
-	}
-
 	// new: try multiple proxy paths and detect "blocked" pages
 	async function tryFetchProxied(targetUrl, candidatePaths) {
 		candidatePaths = candidatePaths || [];
@@ -289,7 +332,7 @@ form.addEventListener('submit', async (event) => {
 				const res = await fetch(url);
 				const text = await res.text();
 				// detect common "blocked" indicators
-				const blockedRx = /Your organization has blocked access|blocked access|Access Denied|This site is blocked|403 Forbidden/i;
+				const blockedRx = /Your organization has blocked access to this site|blocked access|Access Denied|This site is blocked|403 Forbidden/i;
 				if (!res.ok || blockedRx.test(text)) {
 					// try next
 					continue;
@@ -303,7 +346,7 @@ form.addEventListener('submit', async (event) => {
 		return { ok: false, tried };
 	}
 
-	// crawler + cache (no SAMPLE_GAMES fallback)
+	// crawler + cache (uses global tryFetchProxied)
 	async function crawlCrazyGames(maxPages = 300, onProgress){
 		const seen = new Map();
 		const base = 'https://www.crazygames.com';
@@ -311,16 +354,15 @@ form.addEventListener('submit', async (event) => {
 			onProgress && onProgress(page, maxPages);
 			const listUrl = base + '/t/games?page=' + page;
 			try {
-				// try fetching via multiple proxy endpoints and detect blocking
+				// try fetching via configured proxies (global helper)
 				const probe = await tryFetchProxied(listUrl);
 				if (!probe.ok) {
-					// if nothing worked, stop crawling and surface the issue
-					statusEl.textContent = 'Blocked or no proxy reachable. Try changing proxy path/engine.';
+					statusEl.textContent = 'Blocked or no proxy reachable. Adjust proxy-origin/path or choose Ultraviolet.';
+					console.warn('Proxy probe failed', probe);
 					break;
 				}
 				const txt = probe.text;
-				// optionally record which proxy path worked
-				localStorage.setItem('last-proxy-used', probe.path);
+				localStorage.setItem('last-proxy-used', probe.origin + probe.path);
 
 				const doc = new DOMParser().parseFromString(txt,'text/html');
 				const anchors = Array.from(doc.querySelectorAll('a')).filter(a=>{

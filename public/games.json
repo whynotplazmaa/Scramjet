@@ -1,0 +1,18 @@
+{
+  "games": [
+    { "title": "Fireboy and Watergirl", "url": "https://www.crazygames.com/game/fireboy-and-watergirl", "source": "crazygames", "tags": ["puzzle","co-op"] },
+    { "title": "UNO Online", "url": "https://www.crazygames.com/game/uno-online", "source": "crazygames", "tags": ["cards","multiplayer"] },
+    { "title": "Stickman Hook", "url": "https://www.crazygames.com/game/stickman-hook", "source": "crazygames", "tags": ["action"] },
+
+    { "title": "Example Armor Game 1", "url": "https://armorgames.com/play/12345/example-game-1", "source": "armorgames", "tags": ["action"] },
+    { "title": "Example Armor Game 2", "url": "https://armorgames.com/play/67890/example-game-2", "source": "armorgames", "tags": ["puzzle"] },
+
+    { "title": "Example Kongregate Game 1", "url": "https://www.kongregate.com/games/example/game-1", "source": "kongregate", "tags": ["strategy"] },
+    { "title": "Example Kongregate Game 2", "url": "https://www.kongregate.com/games/example/game-2", "source": "kongregate", "tags": ["arcade"] },
+
+    { "title": "Example Newgrounds Game 1", "url": "https://www.newgrounds.com/portal/view/123456", "source": "newgrounds", "tags": ["flash","adventure"] },
+
+    { "title": "Local Mini Golf", "url": "local://mini-golf", "source": "local", "tags": ["built-in"] }
+  ],
+  "notes": "Edit this file to add more game entries. 'source' helps rendering logic; scripts can filter by source and build proxied URLs using your selected engine/proxy-path."
+}
