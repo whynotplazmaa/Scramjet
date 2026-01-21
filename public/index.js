@@ -178,19 +178,22 @@ form.addEventListener('submit', async (event) => {
 });
 
 // --- Global proxy helpers (usable before the Hub panel loads) ---
+function encodeB64(str){
+	// safe unicode -> base64
+	try { return btoa(unescape(encodeURIComponent(str))); }
+	catch (e) { return btoa(str); }
+}
+
 function getProxyUrl(target, overridePath, overrideOrigin) {
-	// read persisted settings
 	const engine = localStorage.getItem('proxy-engine') || 'scramjet';
 	const basePath = (localStorage.getItem('proxy-path') || (engine === 'scramjet' ? '/scram/' : '/ultraviolet/')).trim();
 	const path = (overridePath && overridePath.trim()) ? overridePath.trim() : basePath;
 	const origin = (overrideOrigin && overrideOrigin.trim()) ? overrideOrigin.trim() : (localStorage.getItem('proxy-origin') || location.origin).trim();
 	const normalizedPath = path.startsWith('/') ? path : '/' + path;
-	return origin + normalizedPath + btoa(target);
+	return origin + normalizedPath + encodeB64(target);
 }
 
 async function tryFetchProxied(targetUrl, candidateOrigins = [], candidatePaths = []) {
-	// candidateOrigins: extra origins to try (strings)
-	// candidatePaths: extra paths to try (strings)
 	const userOrigin = (localStorage.getItem('proxy-origin') || '').trim();
 	const userPath = (localStorage.getItem('proxy-path') || '').trim();
 
@@ -200,7 +203,7 @@ async function tryFetchProxied(targetUrl, candidateOrigins = [], candidatePaths 
 	for (const origin of origins) {
 		for (const path of paths) {
 			const p = path.startsWith('/') ? path : '/' + path;
-			const url = origin + p + btoa(targetUrl);
+			const url = origin + p + encodeB64(targetUrl);
 			try {
 				const res = await fetch(url);
 				const text = await res.text();
@@ -209,7 +212,6 @@ async function tryFetchProxied(targetUrl, candidateOrigins = [], candidatePaths 
 					return { ok: true, origin, path: p, url, res, text };
 				}
 			} catch (e) {
-				// try next
 				continue;
 			}
 		}
@@ -218,7 +220,6 @@ async function tryFetchProxied(targetUrl, candidateOrigins = [], candidatePaths 
 }
 
 async function probeProxyHealth() {
-	// quick check using example.com
 	try {
 		const probe = await tryFetchProxied('https://example.com/');
 		return probe;
@@ -316,37 +317,7 @@ async function probeProxyHealth() {
 	proxyPathInput.addEventListener('change', ()=> localStorage.setItem(KEY_PATH, proxyPathInput.value));
 	maxPagesInput.addEventListener('change', ()=> localStorage.setItem(KEY_MAX, maxPagesInput.value));
 
-	// new: try multiple proxy paths and detect "blocked" pages
-	async function tryFetchProxied(targetUrl, candidatePaths) {
-		candidatePaths = candidatePaths || [];
-		// ensure user path first then sensible defaults
-		const userPath = (proxyPathInput.value && proxyPathInput.value.trim()) ? proxyPathInput.value.trim() : null;
-		const defaults = ['/scram/', '/ultraviolet/', '/proxy/'];
-		const tried = [];
-		if (userPath) candidatePaths.unshift(userPath);
-		for (const p of [...new Set([...candidatePaths, ...defaults])]) {
-			const path = p.startsWith('/') ? p : '/' + p;
-			const url = location.origin + path + btoa(targetUrl);
-			tried.push(path);
-			try {
-				const res = await fetch(url);
-				const text = await res.text();
-				// detect common "blocked" indicators
-				const blockedRx = /Your organization has blocked access to this site|blocked access|Access Denied|This site is blocked|403 Forbidden/i;
-				if (!res.ok || blockedRx.test(text)) {
-					// try next
-					continue;
-				}
-				return { ok: true, text, path, url, res };
-			} catch (e) {
-				// network error - try next
-				continue;
-			}
-		}
-		return { ok: false, tried };
-	}
-
-	// crawler + cache (uses global tryFetchProxied)
+	// crawler + cache (simplified to use global helpers)
 	async function crawlCrazyGames(maxPages = 300, onProgress){
 		const seen = new Map();
 		const base = 'https://www.crazygames.com';
@@ -354,15 +325,34 @@ async function probeProxyHealth() {
 			onProgress && onProgress(page, maxPages);
 			const listUrl = base + '/t/games?page=' + page;
 			try {
-				// try fetching via configured proxies (global helper)
-				const probe = await tryFetchProxied(listUrl);
+				// use the global getProxyUrl for the primary attempt
+				const primaryUrl = getProxyUrl(listUrl);
+				let probe = null;
+				try {
+					const res = await fetch(primaryUrl);
+					const text = await res.text();
+					const blockedRx = /Your organization has blocked access|blocked access|Access Denied|This site is blocked|403 Forbidden/i;
+					if (res.ok && !blockedRx.test(text)) {
+						probe = { ok: true, text, url: primaryUrl };
+					}
+				} catch (e) {
+					// primary failed, try fallback paths
+					console.warn('Primary proxy failed, trying fallback...');
+				}
+				
+				// if primary failed, try global fallback logic
+				if (!probe) {
+					probe = await tryFetchProxied(listUrl);
+				}
+				
 				if (!probe.ok) {
-					statusEl.textContent = 'Blocked or no proxy reachable. Adjust proxy-origin/path or choose Ultraviolet.';
-					console.warn('Proxy probe failed', probe);
+					statusEl.textContent = 'Blocked or no proxy reachable. Try Ultraviolet or different proxy-path.';
+					console.warn('All proxies blocked', probe);
 					break;
 				}
+
 				const txt = probe.text;
-				localStorage.setItem('last-proxy-used', probe.origin + probe.path);
+				localStorage.setItem('last-proxy-used', probe.url || primaryUrl);
 
 				const doc = new DOMParser().parseFromString(txt,'text/html');
 				const anchors = Array.from(doc.querySelectorAll('a')).filter(a=>{
@@ -474,24 +464,35 @@ async function probeProxyHealth() {
 	});
 	panel.querySelector('#export-cache').addEventListener('click', ()=> {
 		const data = localStorage.getItem(KEY_CACHE) || '[]';
-		const blob = new Blob([data], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a'); a.href = url; a.download = 'crazygames.json'; a.click();
-		URL.revokeObjectURL(url);
+		try {
+			// download full JSON
+			const fullBlob = new Blob([data], { type: 'application/json' });
+			const fullUrl = URL.createObjectURL(fullBlob);
+			const a1 = document.createElement('a'); a1.href = fullUrl; a1.download = 'crazygames.json'; a1.click();
+			URL.revokeObjectURL(fullUrl);
+
+			// build and download URLs-only JSON
+			const items = JSON.parse(data || '[]');
+			const urls = items.map(i => i.url).filter(Boolean);
+			const urlsBlob = new Blob([JSON.stringify(urls, null, 2)], { type: 'application/json' });
+			const urlsUrl = URL.createObjectURL(urlsBlob);
+			const a2 = document.createElement('a'); a2.href = urlsUrl; a2.download = 'crazygames-urls.json'; a2.click();
+			URL.revokeObjectURL(urlsUrl);
+		} catch (e) {
+			alert('Failed to export cache: ' + e);
+		}
 	});
 
 	filterInput.addEventListener('input', ()=> {
 		try { const cached = JSON.parse(localStorage.getItem(KEY_CACHE) || '[]'); renderGames(cached); } catch(e){}
 	});
 
-	// open proxied game in a cloaked fullscreen window - respects engine/proxy settings via getProxyUrl
+	// open proxied game - uses global getProxyUrl + encodeB64
 	async function openFullscreenGame(targetUrl){
-		// navigate to games.html in the same tab and pass the b64-encoded target
 		try {
-			const enc = encodeURIComponent(btoa(targetUrl));
+			const enc = encodeURIComponent(encodeB64(targetUrl));
 			location.href = location.origin + '/games.html?u=' + enc;
 		} catch (e) {
-			// fallback: store in localStorage if btoa fails for some input
 			localStorage.setItem('selected-game', JSON.stringify({ url: targetUrl }));
 			location.href = location.origin + '/games.html';
 		}
