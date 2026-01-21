@@ -1,36 +1,133 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Games — Plazma</title>
-<link rel="stylesheet" href="/index.css" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Games</title>
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; background: #f6f6f6; }
-.container { max-width: 900px; margin: 0 auto; }
-input[type="text"] { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
-button { padding: 10px 14px; margin-top: 8px; cursor: pointer; }
-.examples { margin-top: 12px; display:flex; gap:8px; flex-wrap:wrap; }
-.example { background:#fff; padding:8px 10px; border-radius:6px; cursor:pointer; border:1px solid #ddd; }
-.note { margin-top:10px; color:#666; font-size:13px; }
+:root{--bg:#071026;--card:#0b1220;--muted:#9aa4b2;--accent:#7b1fa2}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#071026 0%, #07182a 100%);color:#fff}
+.header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px}
+.title{font-size:20px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:18px 24px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:10px;cursor:pointer;overflow:hidden;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column}
+.thumb{background:#071026;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.name{margin-top:10px;font-size:15px;color:#fff;line-height:1.2}
+.meta{font-size:12px;color:var(--muted);margin-top:6px}
+.small-note{font-size:13px;color:var(--muted);padding:0 24px 8px}
+.overlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:9999}
+.overlay.show{display:flex}
+.overlay .frame{position:relative;width:100%;height:100%;max-width:1600px;max-height:100vh;background:#000}
+.frame iframe{width:100%;height:100%;border:0;background:#000}
+.frame .bar{position:absolute;top:12px;right:12px;z-index:1001;display:flex;gap:8px}
+.btn{background:rgba(0,0,0,0.6);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
 </style>
 </head>
 <body>
-	<div class="container">
-		<h2>Load a Game (CrazyGames and others)</h2>
-		<p>Paste a game page URL (e.g. from crazygames.com). The page will be proxied and the player iframe/container will be expanded to fullscreen.</p>
-		<input id="game-url" type="text" placeholder="https://www.crazygames.com/game/example-game" />
-		<div>
-			<button id="load-game">Load Game (Fullscreen)</button>
-			<button id="open-inline">Open Inline (same tab)</button>
+<div class="header">
+	<div class="title">Games</div>
+	<div class="title" style="font-size:13px;color:var(--muted)">Fetched via proxy</div>
+</div>
+<div class="small-note">Click a card to open the game. Thumbnails and names fetched via the local /scram/ proxy.</div>
+<div class="grid" id="games-grid"></div>
+
+<div id="overlay" class="overlay" aria-hidden="true">
+	<div class="frame" id="frame">
+		<div class="bar">
+			<button id="fs-btn" class="btn">Fullscreen</button>
+			<button id="close-btn" class="btn">Close</button>
 		</div>
-		<div class="examples">
-			<div class="example" data-url="https://www.crazygames.com/game/fireboy-and-watergirl">CrazyGames: Fireboy & Watergirl</div>
-			<div class="example" data-url="https://www.crazygames.com/game/uno-online">CrazyGames: UNO</div>
-			<div class="example" data-url="https://www.crazygames.com/game/stickman-hook">CrazyGames: Stickman Hook</div>
-		</div>
-		<div class="note">If a site blocks direct loading, the proxy at /scram/ is used to allow same-origin manipulation. Some sites may still block embedding.</div>
+		<iframe id="game-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock" allow="fullscreen; autoplay"></iframe>
 	</div>
-	<script src="/games.js"></script>
+</div>
+
+<script>
+(function(){
+	const grid = document.getElementById('games-grid');
+	const overlay = document.getElementById('overlay');
+	const iframe = document.getElementById('game-iframe');
+	const closeBtn = document.getElementById('close-btn');
+	const fsBtn = document.getElementById('fs-btn');
+
+	// sample list; you can add more CrazyGames or other URLs
+	const games = [
+		'https://www.crazygames.com/game/fireboy-and-watergirl',
+		'https://www.crazygames.com/game/uno-online',
+		'https://www.crazygames.com/game/stickman-hook',
+		'https://www.crazygames.com/game/archer-2'
+	];
+
+	function proxied(u){ return location.origin + '/scram/' + btoa(u); }
+
+	async function fetchMeta(url){
+		try{
+			const res = await fetch(proxied(url));
+			const txt = await res.text();
+			const doc = new DOMParser().parseFromString(txt,'text/html');
+			const ogTitle = doc.querySelector('meta[property="og:title"]') || doc.querySelector('meta[name="twitter:title"]');
+			const ogImage = doc.querySelector('meta[property="og:image"]') || doc.querySelector('meta[name="twitter:image"]');
+			const title = (ogTitle && ogTitle.content) || doc.title || url;
+			let image = ogImage && ogImage.content ? ogImage.content : null;
+			if(image && !image.startsWith('http')) {
+				try{ image = new URL(image, url).href }catch(e){}
+			}
+			// try to detect inner iframe src that likely hosts the game
+			let inner = null;
+			const innerIframe = doc.querySelector('iframe') || doc.querySelector('div[class*="game"] iframe') || doc.querySelector('#game iframe');
+			if(innerIframe){
+				inner = innerIframe.getAttribute('src') || innerIframe.getAttribute('data-src') || innerIframe.src || null;
+				if(inner && !inner.startsWith('http')){
+					try{ inner = new URL(inner, url).href }catch(e){}
+				}
+			}
+			return { title, image, inner };
+		}catch(e){
+			return { title: url, image: null, inner: null };
+		}
+	}
+
+	function makeCard(meta, url){
+		const el = document.createElement('div'); el.className='card';
+		const thumb = document.createElement('div'); thumb.className='thumb';
+		const img = document.createElement('img');
+		img.alt = meta.title || url;
+		img.src = meta.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220"><rect width="100%" height="100%" fill="%23071b26"/><text x="50%" y="50%" fill="%23fff" font-size="18" text-anchor="middle" alignment-baseline="middle">No Image</text></svg>';
+		thumb.appendChild(img);
+		const name = document.createElement('div'); name.className='name'; name.textContent = meta.title || url;
+		const metaEl = document.createElement('div'); metaEl.className='meta'; metaEl.textContent = 'CrazyGames / External';
+		el.appendChild(thumb); el.appendChild(name); el.appendChild(metaEl);
+		el.addEventListener('click', ()=> openGame(url, meta));
+		return el;
+	}
+
+	async function init(){
+		for(const url of games){
+			const placeholder = document.createElement('div'); placeholder.className='card';
+			placeholder.textContent = 'Loading...';
+			grid.appendChild(placeholder);
+			const meta = await fetchMeta(url);
+			const card = makeCard(meta, url);
+			grid.replaceChild(card, placeholder);
+		}
+	}
+
+	function openGame(url, meta){
+		overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false');
+		// prefer direct inner iframe src if available, otherwise proxied page
+		const src = meta.inner ? (meta.inner.startsWith('http') ? meta.inner : proxied(meta.inner)) : proxied(url);
+		iframe.src = src;
+	}
+
+	closeBtn.onclick = () => { overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); iframe.src = 'about:blank'; };
+	fsBtn.onclick = async () => {
+		const frame = document.getElementById('frame');
+		if(frame.requestFullscreen) await frame.requestFullscreen();
+		else if(frame.webkitRequestFullscreen) await frame.webkitRequestFullscreen();
+	};
+
+	init();
+})();
+</script>
 </body>
 </html>

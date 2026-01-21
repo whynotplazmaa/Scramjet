@@ -1,59 +1,233 @@
 <!doctype html>
 <html><head>
 <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mini Golf</title>
-<style>body,html{margin:0;height:100%}canvas{display:block;background:#e8f5e9;width:100%;height:100vh}</style>
+<title>Games Menu</title>
+<style>
+/* ...existing code... (visual reset) ...existing code... */
+:root{--bg:#0f1720;--card:#0b1220;--muted:#9aa4b2;--accent:#7b1fa2}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#071026 0%, #07182a 100%);color:#fff}
+.header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px}
+.title{font-size:20px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:18px 24px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:10px;cursor:pointer;overflow:hidden;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column}
+.thumb{background:#071026;border-radius:8px;height:140px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.name{margin-top:10px;font-size:15px;color:#fff;line-height:1.2}
+.meta{font-size:12px;color:var(--muted);margin-top:6px}
+.controls{padding:12px 24px;color:var(--muted)}
+.overlay{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:9999}
+.overlay.show{display:flex}
+.overlay .frame{position:relative;width:100%;height:100%;max-width:1600px;max-height:100vh;background:#000}
+.frame iframe{width:100%;height:100%;border:0;background:#000}
+.overlay .bar{position:absolute;top:12px;right:12px;z-index:1001;display:flex;gap:8px}
+.btn{background:rgba(0,0,0,0.6);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+.hidden-canvas{display:none}
+.small-note{font-size:13px;color:var(--muted);padding:0 24px 18px}
+</style>
 </head><body>
-<canvas id="c"></canvas>
+<div class="header">
+	<div class="title">Games</div>
+	<div class="controls">Fetched from CrazyGames & other providers</div>
+</div>
+
+<div class="small-note">Click a card to open the game fullscreen. Thumbnails and names are fetched from each game's page (via the local /scram/ proxy).</div>
+
+<div class="grid" id="games-grid"></div>
+
+<!-- overlay that shows the selected game -->
+<div id="overlay" class="overlay" aria-hidden="true">
+	<div class="frame" id="frame">
+		<div class="bar">
+			<button id="fs-btn" class="btn">Fullscreen</button>
+			<button id="close-btn" class="btn">Close</button>
+		</div>
+		<iframe id="game-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock" allow="fullscreen; autoplay"></iframe>
+	</div>
+</div>
+
+<!-- Hidden local mini-golf game (preserved from original) -->
+<div id="local-minigolf" class="hidden-canvas" aria-hidden="true">
+  <canvas id="c"></canvas>
+  <button id="local-fs" style="position:fixed;top:10px;left:10px;z-index:999;background:#7b1fa2;color:white;border:none;padding:8px;border-radius:8px;">Fullscreen</button>
+</div>
+
 <script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-function resize(){canvas.width = innerWidth; canvas.height = innerHeight}
-addEventListener('resize', resize); resize();
+/* ...existing code... (mini golf logic moved under initLocalMiniGolf function) ...existing code... */
+(function(){
+  // sample game list (CrazyGames examples and a local entry)
+  const games = [
+    { id: 'crazy-fireboy', url: 'https://www.crazygames.com/game/fireboy-and-watergirl' },
+    { id: 'crazy-uno', url: 'https://www.crazygames.com/game/uno-online' },
+    { id: 'crazy-stickman', url: 'https://www.crazygames.com/game/stickman-hook' },
+    { id: 'crazy-bow', url: 'https://www.crazygames.com/game/archer-2' },
+    { id: 'local-mini-golf', url: 'local://mini-golf', title: 'Mini Golf (Local)' }
+  ];
 
-let ball = { x: 100, y: canvas.height-120, vx:0, vy:0, r:12 };
-let hole = { x: canvas.width-200, y: 120, r:18 };
-let friction = 0.995;
+  const grid = document.getElementById('games-grid');
+  const overlay = document.getElementById('overlay');
+  const iframe = document.getElementById('game-iframe');
+  const closeBtn = document.getElementById('close-btn');
+  const fsBtn = document.getElementById('fs-btn');
 
-canvas.addEventListener('click', (e)=>{
-  // aim from ball to click, apply velocity proportional to distance
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
-  const dx = mx - ball.x, dy = my - ball.y;
-  const dist = Math.hypot(dx,dy);
-  if(dist<30){ ball.vx*=0.2; ball.vy*=0.2; return; }
-  const power = Math.min(dist/15, 12);
-  ball.vx = (dx/dist)*power; ball.vy = (dy/dist)*power;
-});
-
-function step(){
-  ball.x += ball.vx; ball.y += ball.vy;
-  ball.vx *= friction; ball.vy *= friction;
-  // bounds
-  if(ball.x<ball.r){ ball.x = ball.r; ball.vx*=-0.5 }
-  if(ball.y<ball.r){ ball.y = ball.r; ball.vy*=-0.5 }
-  if(ball.x>canvas.width-ball.r){ ball.x = canvas.width-ball.r; ball.vx*=-0.5 }
-  if(ball.y>canvas.height-ball.r){ ball.y = canvas.height-ball.r; ball.vy*=-0.5 }
-  // check hole
-  const d = Math.hypot(ball.x-hole.x, ball.y-hole.y);
-  if(d < hole.r){ // scored
-    ball.x = hole.x; ball.y = hole.y; ball.vx=0; ball.vy=0;
+  function proxied(u){
+    return u.startsWith('local://') ? u : location.origin + '/scram/' + btoa(u);
   }
-}
 
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  // course
-  ctx.fillStyle='#a5d6a7'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  // hole
-  ctx.beginPath(); ctx.fillStyle='black'; ctx.arc(hole.x,hole.y,hole.r,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.fillStyle='white'; ctx.arc(hole.x,hole.y,hole.r-6,0,Math.PI*2); ctx.fill();
-  // ball
-  ctx.beginPath(); ctx.fillStyle='#ffeb3b'; ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
-}
+  async function fetchMeta(originalUrl){
+    if (originalUrl.startsWith('local://')) {
+      return { title: 'Mini Golf (Local)', image: null, direct: null };
+    }
+    const p = proxied(originalUrl);
+    try {
+      const res = await fetch(p);
+      const txt = await res.text();
+      const doc = new DOMParser().parseFromString(txt, 'text/html');
+      const ogTitle = doc.querySelector('meta[property="og:title"]') || doc.querySelector('meta[name="twitter:title"]');
+      const ogImage = doc.querySelector('meta[property="og:image"]') || doc.querySelector('meta[name="twitter:image"]');
+      const title = (ogTitle && ogTitle.content) || (doc.title || originalUrl);
+      const image = ogImage && ogImage.content ? (ogImage.content.startsWith('http') ? ogImage.content : (new URL(ogImage.content, originalUrl).href)) : null;
 
-function loop(){ step(); draw(); requestAnimationFrame(loop) }
-loop();
+      // try to find inner iframe that hosts the game
+      let inner = null;
+      const innerIframe = doc.querySelector('iframe') || doc.querySelector('div[class*="game"] iframe') || doc.querySelector('div#game iframe');
+      if (innerIframe) {
+        inner = innerIframe.getAttribute('src') || innerIframe.getAttribute('data-src') || innerIframe.src;
+        if (inner && !inner.startsWith('http')) {
+          try { inner = new URL(inner, originalUrl).href; } catch(e){}
+        }
+      }
+      return { title, image, direct: inner };
+    } catch (e) {
+      return { title: originalUrl, image: null, direct: null };
+    }
+  }
+
+  function createCard(data, originalUrl){
+    const el = document.createElement('div');
+    el.className = 'card';
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    const img = document.createElement('img');
+    img.alt = data.title || originalUrl;
+    img.src = data.image || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220"><rect width="100%" height="100%" fill="%23071b26"/><text x="50%" y="50%" fill="%23fff" font-size="18" text-anchor="middle" alignment-baseline="middle">No Image</text></svg>';
+    thumb.appendChild(img);
+
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = data.title || originalUrl;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = originalUrl.startsWith('local://') ? 'Local' : 'CrazyGames/External';
+
+    el.appendChild(thumb);
+    el.appendChild(name);
+    el.appendChild(meta);
+
+    el.onclick = () => openGame(originalUrl, data);
+    return el;
+  }
+
+  async function init(){
+    // populate grid with placeholders then fetch metadata
+    for (const g of games){
+      const placeholder = createCard({ title: g.title || 'Loading...', image: null }, g.url);
+      grid.appendChild(placeholder);
+      // fetch metadata and replace card
+      const meta = await fetchMeta(g.url);
+      const card = createCard(meta, g.url);
+      grid.replaceChild(card, placeholder);
+    }
+  }
+
+  async function openGame(originalUrl, meta){
+    if (originalUrl.startsWith('local://')) {
+      // show local mini-golf canvas
+      showLocalMiniGolf();
+      return;
+    }
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    // prefer direct game iframe src if discovered
+    const src = meta.direct || proxied(originalUrl);
+    try { iframe.src = src; } catch(e){ iframe.src = proxied(originalUrl); }
+  }
+
+  closeBtn.onclick = () => { overlay.classList.remove('show'); overlay.setAttribute('aria-hidden','true'); iframe.src = 'about:blank'; };
+
+  fsBtn.onclick = async () => {
+    const frameEl = document.getElementById('frame');
+    if (frameEl.requestFullscreen) await frameEl.requestFullscreen();
+    else if (frameEl.webkitRequestFullscreen) await frameEl.webkitRequestFullscreen();
+  };
+
+  // Local mini-golf initialization (preserve original game code)
+  function showLocalMiniGolf(){
+    const container = document.getElementById('local-minigolf');
+    container.style.display = 'block';
+    // move into overlay for fullscreen experience
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+    // insert the canvas into the overlay frame area
+    const frame = document.getElementById('frame');
+    frame.innerHTML = ''; // remove default controls/iframe
+    const bar = document.createElement('div'); bar.className='bar';
+    const close = document.createElement('button'); close.className='btn'; close.textContent='Close'; close.onclick = ()=>{ location.reload(); };
+    const fs = document.createElement('button'); fs.className='btn'; fs.textContent='Fullscreen'; fs.onclick = async ()=>{ if (frame.requestFullscreen) await frame.requestFullscreen(); };
+    bar.appendChild(fs); bar.appendChild(close); frame.appendChild(bar);
+    const canvas = document.getElementById('c');
+    frame.appendChild(canvas);
+    const localFsBtn = document.getElementById('local-fs');
+    localFsBtn.onclick = async ()=>{ if (frame.requestFullscreen) await frame.requestFullscreen(); };
+    initLocalMiniGolf(); // start the game
+  }
+
+  // original mini-golf logic (kept but wrapped)
+  function initLocalMiniGolf(){
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    function resize(){canvas.width = innerWidth; canvas.height = innerHeight}
+    addEventListener('resize', resize); resize();
+
+    let ball = { x: 100, y: canvas.height-120, vx:0, vy:0, r:12 };
+    let hole = { x: canvas.width-200, y: 120, r:18 };
+    let friction = 0.995;
+
+    canvas.addEventListener('click', (e)=>{
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
+      const dx = mx - ball.x, dy = my - ball.y;
+      const dist = Math.hypot(dx,dy);
+      if(dist<30){ ball.vx*=0.2; ball.vy*=0.2; return; }
+      const power = Math.min(dist/15, 12);
+      ball.vx = (dx/dist)*power; ball.vy = (dy/dist)*power;
+    });
+
+    function step(){
+      ball.x += ball.vx; ball.y += ball.vy;
+      ball.vx *= friction; ball.vy *= friction;
+      if(ball.x<ball.r){ ball.x = ball.r; ball.vx*=-0.5 }
+      if(ball.y<ball.r){ ball.y = ball.r; ball.vy*=-0.5 }
+      if(ball.x>canvas.width-ball.r){ ball.x = canvas.width-ball.r; ball.vx*=-0.5 }
+      if(ball.y>canvas.height-ball.r){ ball.y = canvas.height-ball.r; ball.vy*=-0.5 }
+      const d = Math.hypot(ball.x-hole.x, ball.y-hole.y);
+      if(d < hole.r){ ball.x = hole.x; ball.y = hole.y; ball.vx=0; ball.vy=0; }
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#a5d6a7'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.beginPath(); ctx.fillStyle='black'; ctx.arc(hole.x,hole.y,hole.r,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle='white'; ctx.arc(hole.x,hole.y,hole.r-6,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle='#ffeb3b'; ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+    }
+
+    function loop(){ step(); draw(); requestAnimationFrame(loop) }
+    loop();
+  }
+
+  init();
+})();
 </script>
-<button onclick="if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen()" style="position:fixed;top:10px;left:10px;z-index:999;background:#7b1fa2;color:white;border:none;padding:8px;border-radius:8px;">Fullscreen</button>
 </body></html>
