@@ -176,8 +176,8 @@ form.addEventListener('submit', async (event) => {
 	}
 });
 
-// Replace the previous games button code with a styled windowed panel, crawler and fullscreen opener
-(function addGamesPanel(){
+// Replace the previous games panel with an enhanced fixed panel (no dragging), engine toggle and many features
+(function addEnhancedPanel(){
 	const CSS = `
 		#games-btn { position: fixed; left: 18px; top: 18px; z-index:11000;
 			background: linear-gradient(45deg,#7b1fa2,#ec407a); color:#fff;
@@ -190,42 +190,53 @@ form.addEventListener('submit', async (event) => {
 			box-shadow: 0 20px 60px rgba(2,6,23,0.6); z-index: 10999; display: none; flex-direction: column; overflow: hidden;
 		}
 		#games-panel.show{ display:flex; }
-		#games-panel .header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent); }
+		#games-panel .header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent); gap:12px; flex-wrap:wrap; }
 		#games-panel .title { color: #fff; font-weight:800; letter-spacing:-0.5px }
-		#games-panel .controls { display:flex; gap:8px; align-items:center }
-		#games-panel .grid { padding:12px; display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; overflow:auto; }
-		.game-card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; padding:8px; cursor:pointer; display:flex; flex-direction:column; gap:8px; border:1px solid rgba(255,255,255,0.03); }
-		.game-card .thumb { height:110px; border-radius:8px; overflow:hidden; background:#071026; display:flex; align-items:center; justify-content:center }
-		.game-card img{ width:100%; height:100%; object-fit:cover; display:block }
-		.game-card .name{ color:#fff; font-size:13px; font-weight:600; line-height:1.2 }
-		.game-card .meta{ color: rgba(255,255,255,0.6); font-size:12px }
-		#games-panel .footer { padding:10px 12px; font-size:13px; color:rgba(255,255,255,0.6); background: linear-gradient(0deg, rgba(255,255,255,0.01), transparent); }
-		.panel-btn { background: rgba(0,0,0,0.45); border:none; color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer }
+		.controls-group { display:flex; gap:8px; align-items:center }
+		.panel-input { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.04); color:#fff; padding:6px 8px; border-radius:8px; }
+		#games-panel .grid { padding:12px; display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; overflow:auto; flex:1; }
+		.game-card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; padding:8px; cursor:pointer; display:flex; flex-direction:column; gap:8px; border:1px solid rgba(255,255,255,0.03); min-height:160px }
+		.thumb { height:110px; border-radius:8px; overflow:hidden; background:#071026; display:flex; align-items:center; justify-content:center }
+		.thumb img{ width:100%; height:100%; object-fit:cover; display:block }
+		.name{ color:#fff; font-size:13px; font-weight:600; line-height:1.2 }
+		.meta{ color: rgba(255,255,255,0.6); font-size:12px }
+		.footer { padding:10px 12px; font-size:13px; color:rgba(255,255,255,0.6); background: linear-gradient(0deg, rgba(255,255,255,0.01), transparent); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+		.panel-btn { background: rgba(0,0,0,0.45); border:none; color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; }
+		.status { color: rgba(255,255,255,0.75); font-size:13px; margin-left:8px }
 	`;
-	const style = document.createElement('style');
-	style.textContent = CSS;
-	document.head.appendChild(style);
+	const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
 
-	// elements
 	const btn = document.createElement('button');
-	btn.id = 'games-btn';
-	btn.title = 'Games';
-	btn.textContent = '🎮 Games';
+	btn.id = 'games-btn'; btn.title = 'Hub'; btn.textContent = '🎮 Hub';
+
 	const panel = document.createElement('div');
 	panel.id = 'games-panel';
 	panel.innerHTML = `
-		<div class="header" id="games-panel-header">
-			<div class="title">Games — CrazyGames</div>
-			<div class="controls">
-				<button class="panel-btn" id="refresh-games">Refresh</button>
-				<button class="panel-btn" id="close-games">Close</button>
+		<div class="header">
+			<div style="display:flex;align-items:center;gap:12px;">
+				<div class="title">Play & Media Hub</div>
+				<div class="controls-group">
+					<select id="engine-select" class="panel-input" title="Proxy engine"><option value="scramjet">Scramjet</option><option value="ultraviolet">Ultraviolet</option></select>
+					<input id="proxy-path" class="panel-input" placeholder="/scram/" title="Custom proxy path" />
+					<input id="max-pages" class="panel-input" placeholder="Max pages" style="width:90px" />
+					<input id="games-filter" class="panel-input" placeholder="Filter games..." />
+				</div>
+			</div>
+			<div style="display:flex;align-items:center;gap:8px">
+				<button class="panel-btn" id="refresh-panel">Refresh</button>
+				<button class="panel-btn" id="export-cache">Export</button>
+				<button class="panel-btn" id="clear-cache">Clear Cache</button>
+				<button class="panel-btn" id="close-panel">Close</button>
 			</div>
 		</div>
 		<div class="grid" id="games-grid"></div>
-		<div class="footer">Fetched via proxy. Click a card to open fullscreen.</div>
+		<div class="footer">
+			<div><span class="status" id="games-status">Idle</span></div>
+			<div><small style="color:rgba(255,255,255,0.5)">Proxy-powered • Colors synced</small></div>
+		</div>
 	`;
 
-	// insert into DOM near settingsBtn if available
+	// inject near settings button
 	if (settingsBtn && settingsBtn.parentNode) {
 		settingsBtn.parentNode.insertBefore(btn, settingsBtn.nextSibling);
 		settingsBtn.parentNode.insertBefore(panel, settingsBtn.nextSibling);
@@ -234,54 +245,43 @@ form.addEventListener('submit', async (event) => {
 		document.body.appendChild(panel);
 	}
 
-	// draggable header
-	(function makeDraggable(){
-		const header = panel.querySelector('#games-panel-header');
-		let dragging = false, startX=0, startY=0, startLeft=0, startTop=0;
-		header.style.cursor = 'grab';
-		header.addEventListener('mousedown', (ev)=>{
-			dragging = true; header.style.cursor='grabbing';
-			startX = ev.clientX; startY = ev.clientY;
-			const rect = panel.getBoundingClientRect();
-			startLeft = rect.left; startTop = rect.top;
-			ev.preventDefault();
-		});
-		window.addEventListener('mousemove', (ev)=>{
-			if(!dragging) return;
-			let nx = startLeft + (ev.clientX - startX);
-			let ny = startTop + (ev.clientY - startY);
-			// clamp to viewport
-            nx = Math.max(8, Math.min(window.innerWidth - panel.offsetWidth - 8, nx));
-            ny = Math.max(8, Math.min(window.innerHeight - panel.offsetHeight - 8, ny));
-			panel.style.left = nx + 'px'; panel.style.top = ny + 'px';
-		});
-		window.addEventListener('mouseup', ()=>{ dragging=false; header.style.cursor='grab'; });
-	})();
+	// persistence keys & helpers
+	const KEY_ENGINE = 'proxy-engine';
+	const KEY_PATH = 'proxy-path';
+	const KEY_MAX = 'crazy-max-pages';
+	const KEY_CACHE = 'crazygames-all';
+	const engineSelect = panel.querySelector('#engine-select');
+	const proxyPathInput = panel.querySelector('#proxy-path');
+	const maxPagesInput = panel.querySelector('#max-pages');
+	const filterInput = panel.querySelector('#games-filter');
+	const statusEl = panel.querySelector('#games-status');
 
-	btn.addEventListener('click', async ()=>{
-		panel.classList.toggle('show');
-		if(panel.classList.contains('show')) {
-			await ensureGamesLoaded();
-		}
-	});
+	engineSelect.value = localStorage.getItem(KEY_ENGINE) || 'scramjet';
+	proxyPathInput.value = localStorage.getItem(KEY_PATH) || '/scram/';
+	maxPagesInput.value = localStorage.getItem(KEY_MAX) || '60';
 
-	panel.querySelector('#close-games').addEventListener('click', ()=> panel.classList.remove('show'));
-	panel.querySelector('#refresh-games').addEventListener('click', async ()=>{
-		panel.querySelector('#games-grid').innerHTML = '';
-		await crawlAndRender(true);
-	});
+	engineSelect.addEventListener('change', ()=> localStorage.setItem(KEY_ENGINE, engineSelect.value));
+	proxyPathInput.addEventListener('change', ()=> localStorage.setItem(KEY_PATH, proxyPathInput.value));
+	maxPagesInput.addEventListener('change', ()=> localStorage.setItem(KEY_MAX, maxPagesInput.value));
 
-	// crawler + cache
-	const CACHE_KEY = 'crazygames-all';
-	async function proxied(u){ return location.origin + '/scram/' + btoa(u); }
+	function getProxyUrl(u){
+		const engine = engineSelect.value || 'scramjet';
+		const basePath = proxyPathInput.value && proxyPathInput.value.trim() ? proxyPathInput.value.trim() : (engine === 'scramjet' ? '/scram/' : '/ultraviolet/');
+		// ensure leading slash
+		const path = basePath.startsWith('/') ? basePath : '/' + basePath;
+		// simple conventions: both engines accept btoa payload in this UI
+		return location.origin + path + btoa(u);
+	}
 
-	async function crawlCrazyGames(maxPages = 300){
+	// crawler + cache (no SAMPLE_GAMES fallback)
+	async function crawlCrazyGames(maxPages = 300, onProgress){
 		const seen = new Map();
 		const base = 'https://www.crazygames.com';
 		for(let page=1; page<=maxPages; page++){
+			onProgress && onProgress(page, maxPages);
 			const listUrl = base + '/t/games?page=' + page;
 			try {
-				const res = await fetch(proxied(listUrl));
+				const res = await fetch(getProxyUrl(listUrl));
 				if(!res.ok) break;
 				const txt = await res.text();
 				const doc = new DOMParser().parseFromString(txt,'text/html');
@@ -313,31 +313,44 @@ form.addEventListener('submit', async (event) => {
 				console.warn('crawl error', e);
 				break;
 			}
-			await new Promise(r=>setTimeout(r, 180));
+			await new Promise(r=>setTimeout(r, 150));
 		}
 		return Array.from(seen.values());
 	}
 
 	async function ensureGamesLoaded(){
-		let list = [];
-		const cached = localStorage.getItem(CACHE_KEY);
-		if(cached){
-			try{ list = JSON.parse(cached) }catch(e){ list = [] }
-			renderGames(list);
-			// refresh in background
-			crawlAndRender(false).catch(()=>{});
-			return;
+		const cached = localStorage.getItem(KEY_CACHE);
+		if (cached) {
+			try{
+				renderGames(JSON.parse(cached));
+				// refresh in background
+				crawlAndRender(false).catch(()=>{});
+				return;
+			}catch(e){}
 		}
 		await crawlAndRender(true);
 	}
 
-	async function crawlAndRender(force){
+	async function crawlAndRender(forceFull){
 		try {
+			const max = parseInt(maxPagesInput.value,10) || 60;
 			panel.querySelector('#games-grid').innerHTML = '<div style="padding:20px;color:rgba(255,255,255,0.7)">Fetching games… this may take a while</div>';
-			const data = await crawlCrazyGames(250);
-			localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+			statusEl.textContent = 'Crawling...';
+			const data = await crawlCrazyGames(max, (page,total)=> {
+				statusEl.textContent = `Crawling page ${page}/${total}...`;
+			});
+			if (!data || data.length === 0) {
+				statusEl.textContent = 'No games found';
+				panel.querySelector('#games-grid').innerHTML = '<div style="padding:18px;color:rgba(255,255,255,0.7)">No games found</div>';
+				return;
+			}
+			// sort alphabetically and cache
+			data.sort((a,b)=> (a.title||'').localeCompare(b.title||''));
+			localStorage.setItem(KEY_CACHE, JSON.stringify(data));
+			statusEl.textContent = `Fetched ${data.length} games`;
 			renderGames(data);
 		} catch(e){
+			statusEl.textContent = 'Failed to fetch';
 			panel.querySelector('#games-grid').innerHTML = '<div style="padding:20px;color:rgba(255,80,80,0.9)">Failed to fetch games</div>';
 			console.error(e);
 		}
@@ -346,8 +359,10 @@ form.addEventListener('submit', async (event) => {
 	function renderGames(list){
 		const grid = panel.querySelector('#games-grid');
 		grid.innerHTML = '';
-		if(!list || list.length===0){ grid.innerHTML = '<div style="padding:18px;color:rgba(255,255,255,0.7)">No games found</div>'; return; }
-		for(const g of list){
+		const filter = (filterInput.value || '').toLowerCase().trim();
+		const filtered = filter ? list.filter(g => (g.title||'').toLowerCase().includes(filter) || (g.url||'').toLowerCase().includes(filter)) : list;
+		if(!filtered || filtered.length===0){ grid.innerHTML = '<div style="padding:18px;color:rgba(255,255,255,0.7)">No games match filter</div>'; return; }
+		for(const g of filtered){
 			const card = document.createElement('div'); card.className = 'game-card';
 			const thumb = document.createElement('div'); thumb.className = 'thumb';
 			const img = document.createElement('img'); img.alt = g.title || g.url;
@@ -364,10 +379,35 @@ form.addEventListener('submit', async (event) => {
 		}
 	}
 
-	// open proxied game in a cloaked fullscreen window
+	// wire UI actions
+	btn.addEventListener('click', ()=> {
+		panel.classList.toggle('show');
+		if(panel.classList.contains('show')) ensureGamesLoaded();
+	});
+	panel.querySelector('#close-panel').addEventListener('click', ()=> panel.classList.remove('show'));
+	panel.querySelector('#refresh-panel').addEventListener('click', async ()=> {
+		panel.querySelector('#games-grid').innerHTML = ''; await crawlAndRender(true);
+	});
+	panel.querySelector('#clear-cache').addEventListener('click', ()=> {
+		localStorage.removeItem(KEY_CACHE);
+		statusEl.textContent = 'Cache cleared';
+	});
+	panel.querySelector('#export-cache').addEventListener('click', ()=> {
+		const data = localStorage.getItem(KEY_CACHE) || '[]';
+		const blob = new Blob([data], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a'); a.href = url; a.download = 'crazygames.json'; a.click();
+		URL.revokeObjectURL(url);
+	});
+
+	filterInput.addEventListener('input', ()=> {
+		try { const cached = JSON.parse(localStorage.getItem(KEY_CACHE) || '[]'); renderGames(cached); } catch(e){}
+	});
+
+	// open proxied game in a cloaked fullscreen window - respects engine/proxy settings via getProxyUrl
 	async function openFullscreenGame(targetUrl){
-		const prox = proxied(targetUrl);
-		// try to fetch proxied document and locate inner iframe src
+		const prox = getProxyUrl(targetUrl);
+		// attempt to detect inner iframe src via proxied doc - best-effort
 		let inner = null;
 		try {
 			const res = await fetch(prox);
@@ -385,13 +425,12 @@ form.addEventListener('submit', async (event) => {
 		} catch(e){
 			console.warn('meta fetch failed', e);
 		}
-
-		const finalSrc = inner ? (inner.startsWith('http') ? inner : proxied(inner)) : prox;
+		const finalSrc = inner ? (inner.startsWith('http') ? inner : getProxyUrl(inner)) : prox;
 		const win = window.open('about:blank', '_blank');
 		if(!win){ alert('Popup blocked! Allow popups.'); return; }
 		win.document.title = 'Game';
 		const s = win.document.createElement('style');
-		s.textContent = 'html,body{width:100%;height:100%;margin:0;background:#000} iframe#g{position:fixed;inset:0;width:100%;height:100%;border:0} button#c{position:fixed;right:12px;top:12px;z-index:99999;background:rgba(0,0,0,0.6);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}';
+		s.textContent = 'html,body{width:100%;height:100%;margin:0;background:#000} iframe#g{position:fixed;inset:0;width:100%;height:100%;border:0} button#c{position:fixed;right:12px;top:12px;z-index:99999;background:linear-gradient(45deg,#7b1fa2,#ec407a);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}';
 		win.document.head.appendChild(s);
 		const iframe = win.document.createElement('iframe');
 		iframe.id = 'g';
@@ -402,10 +441,18 @@ form.addEventListener('submit', async (event) => {
 		close.id = 'c'; close.textContent = '✕';
 		close.onclick = ()=> win.close();
 		win.document.body.appendChild(close);
-		// add fullscreen helper (try request on container)
 		close.addEventListener('dblclick', async ()=> {
 			try{ if(win.document.documentElement.requestFullscreen) await win.document.documentElement.requestFullscreen(); }catch(e){}
 		});
 	}
 
+	// initial load of saved settings
+	(function loadInitialSettings(){
+		const cachedEngine = localStorage.getItem(KEY_ENGINE);
+		if(cachedEngine) engineSelect.value = cachedEngine;
+		const cachedPath = localStorage.getItem(KEY_PATH);
+		if(cachedPath) proxyPathInput.value = cachedPath;
+		const cachedMax = localStorage.getItem(KEY_MAX);
+		if(cachedMax) maxPagesInput.value = cachedMax;
+	})();
 })();
