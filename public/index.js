@@ -185,24 +185,25 @@ form.addEventListener('submit', async (event) => {
 			box-shadow: 0 8px 24px rgba(124,58,237,0.18); font-weight:700;
 		}
 		#games-panel { position: fixed; left: 60px; top: 60px; width: 920px; max-width: calc(100vw - 120px);
-			height: 70vh; max-height: calc(100vh - 120px); background: rgba(255,255,255,0.06);
-			backdrop-filter: blur(10px); border-radius: 14px; border: 1px solid rgba(255,255,255,0.06);
-			box-shadow: 0 20px 60px rgba(2,6,23,0.6); z-index: 10999; display: none; flex-direction: column; overflow: hidden;
+			height: 70vh; max-height: calc(100vh - 120px); background: rgba(255,255,255,0.95);
+			backdrop-filter: blur(6px); border-radius: 14px; border: 1px solid rgba(0,0,0,0.08);
+			box-shadow: 0 20px 60px rgba(2,6,23,0.08); z-index: 10999; display: none; flex-direction: column; overflow: hidden;
+			color: #000;
 		}
 		#games-panel.show{ display:flex; }
-		#games-panel .header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent); gap:12px; flex-wrap:wrap; }
-		#games-panel .title { color: #fff; font-weight:800; letter-spacing:-0.5px }
+		#games-panel .header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background: rgba(255,255,255,0.98); gap:12px; flex-wrap:wrap; border-bottom: 1px solid rgba(0,0,0,0.04) }
+		#games-panel .title { color: #000; font-weight:800; letter-spacing:-0.5px }
 		.controls-group { display:flex; gap:8px; align-items:center }
-		.panel-input { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.04); color:#fff; padding:6px 8px; border-radius:8px; }
-		#games-panel .grid { padding:12px; display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; overflow:auto; flex:1; }
-		.game-card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:10px; padding:8px; cursor:pointer; display:flex; flex-direction:column; gap:8px; border:1px solid rgba(255,255,255,0.03); min-height:160px }
-		.thumb { height:110px; border-radius:8px; overflow:hidden; background:#071026; display:flex; align-items:center; justify-content:center }
+		.panel-input { background: #fff; border: 1px solid rgba(0,0,0,0.08); color:#000; padding:6px 8px; border-radius:8px; }
+		#games-panel .grid { padding:12px; display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; overflow:auto; flex:1; background: transparent; }
+		.game-card { background: #fff; border-radius:10px; padding:8px; cursor:pointer; display:flex; flex-direction:column; gap:8px; border:1px solid rgba(0,0,0,0.06); min-height:160px; color:#000 }
+		.thumb { height:110px; border-radius:8px; overflow:hidden; background:#f5f5f5; display:flex; align-items:center; justify-content:center }
 		.thumb img{ width:100%; height:100%; object-fit:cover; display:block }
-		.name{ color:#fff; font-size:13px; font-weight:600; line-height:1.2 }
-		.meta{ color: rgba(255,255,255,0.6); font-size:12px }
-		.footer { padding:10px 12px; font-size:13px; color:rgba(255,255,255,0.6); background: linear-gradient(0deg, rgba(255,255,255,0.01), transparent); display:flex; align-items:center; justify-content:space-between; gap:8px; }
-		.panel-btn { background: rgba(0,0,0,0.45); border:none; color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; }
-		.status { color: rgba(255,255,255,0.75); font-size:13px; margin-left:8px }
+		.name{ color:#000; font-size:13px; font-weight:600; line-height:1.2 }
+		.meta{ color: rgba(0,0,0,0.6); font-size:12px }
+		.footer { padding:10px 12px; font-size:13px; color:rgba(0,0,0,0.7); background: rgba(255,255,255,0.98); display:flex; align-items:center; justify-content:space-between; gap:8px; border-top:1px solid rgba(0,0,0,0.04) }
+		.panel-btn { background: linear-gradient(45deg,#7b1fa2,#ec407a); border:none; color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; }
+		.status { color: rgba(0,0,0,0.75); font-size:13px; margin-left:8px }
 	`;
 	const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
 
