@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Game</title>
+<style>
+html,body{height:100%;margin:0;padding:0;overflow:hidden;background:#000}
+body{display:flex;flex-direction:column}
+.controls{background:#222;padding:10px;display:flex;gap:10px;z-index:1000;border-bottom:1px solid #444}
+.btn{background:#7b1fa2;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:14px}
+.btn:hover{background:#9c27b0}
+.game-container{flex:1;overflow:hidden;background:#000}
+iframe{width:100%;height:100%;border:0}
+</style>
+</head>
+<body>
+	<div class="controls">
+		<button class="btn" id="fullscreen-btn">⛶ Fullscreen</button>
+		<button class="btn" id="back-btn">← Back</button>
+		<span style="color:#999;font-size:12px;margin-left:auto;align-self:center" id="game-title">Game</span>
+	</div>
+	<div class="game-container">
+		<iframe id="game-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock allow-presentation" allow="fullscreen; autoplay; geolocation; microphone; camera; encrypted-media; picture-in-picture"></iframe>
+	</div>
+
+<script>
+(function(){
+  const gameFrame = document.getElementById('game-frame');
+  const fullscreenBtn = document.getElementById('fullscreen-btn');
+  const backBtn = document.getElementById('back-btn');
+  const gameTitle = document.getElementById('game-title');
+
+  // Get game ID from URL
+  const gameId = new URLSearchParams(location.search).get('game');
+  if (!gameId) {
+    document.body.innerHTML = '<div style="color:white;text-align:center;margin-top:50px">No game specified. Add ?game=game-id to the URL.</div>';
+  } else {
+    gameTitle.textContent = gameId.replace(/-/g, ' ');
+    
+    // Load game from duckmath.org
+    // The game redirects from /class/{id} to db.duckmath.org/html/{id}/
+    const gameUrl = `https://duckmath.org/class/${gameId}`;
+    
+    // Check if we should use a proxy
+    const engine = localStorage.getItem('proxy-engine') || 'none';
+    const basePath = localStorage.getItem('proxy-path') || '/scram/';
+    
+    let srcUrl = gameUrl;
+    if (engine !== 'none' && basePath) {
+      const path = basePath.startsWith('/') ? basePath : '/' + basePath;
+      srcUrl = location.origin + path + btoa(gameUrl);
+    }
+    
+    gameFrame.src = srcUrl;
+  }
+
+  // Fullscreen button
+  fullscreenBtn.onclick = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        await document.documentElement.webkitRequestFullscreen();
+      } else if (document.documentElement.msRequestFullscreen) {
+        await document.documentElement.msRequestFullscreen();
+      }
+    } catch(e) {
+      console.warn('Fullscreen request failed:', e);
+    }
+  };
+
+  // Back button
+  backBtn.onclick = () => {
+    history.back();
+  };
+
+  // Exit fullscreen with Escape key
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      // Exited fullscreen
+    }
+  });
+})();
+</script>
+</body>
+</html>
