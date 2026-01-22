@@ -26,33 +26,47 @@ const GAMES = [
 ];
 
 (function(){
-  const grid = document.getElementById('games-grid');
-  const search = document.getElementById('search');
-  let filtered = GAMES;
-
-  function render(list) {
-    grid.innerHTML = '';
-    for (const game of list) {
-      const card = document.createElement('a');
-      card.href = `https://duckmath.org/class/${game.id}`;
-      card.target = '_blank';
-      card.rel = 'noopener noreferrer';
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="thumb">${game.title.substring(0, 1).toUpperCase()}</div>
-        <div class="name">${game.title}</div>
-        <div class="meta">${game.cat}</div>
-      `;
-      grid.appendChild(card);
+  function init() {
+    const grid = document.getElementById('games-grid');
+    const search = document.getElementById('search');
+    
+    if (!grid || !search) {
+      console.error('Grid or search element not found');
+      return;
     }
+    
+    let filtered = GAMES;
+
+    function render(list) {
+      grid.innerHTML = '';
+      for (const game of list) {
+        const card = document.createElement('a');
+        card.href = `https://duckmath.org/class/${game.id}`;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb">${game.title.substring(0, 1).toUpperCase()}</div>
+          <div class="name">${game.title}</div>
+          <div class="meta">${game.cat}</div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    search.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      filtered = GAMES.filter(g => g.title.toLowerCase().includes(q) || g.cat.toLowerCase().includes(q));
+      render(filtered);
+    });
+
+    render(GAMES);
   }
-
-  search.addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase();
-    filtered = GAMES.filter(g => g.title.toLowerCase().includes(q) || g.cat.toLowerCase().includes(q));
-    render(filtered);
-  });
-
-  render(GAMES);
-});
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
 
