@@ -26,8 +26,8 @@ const GAMES = [
 ];
 
 function getProxyUrl(url) {
+  // Scramjet's Service Worker intercepts anything starting with /scram/
   const basePath = '/scram/';
-  // Scramjet requires the full URL (including https://) to be appended to the prefix
   return window.location.origin + basePath + url;
 }
 
@@ -43,31 +43,19 @@ function getProxyUrl(url) {
       for (const game of list) {
         const card = document.createElement('button');
         card.className = 'card';
-        card.style.cssText = `
-          cursor: pointer; 
-          background: rgba(255,255,255,0.05); 
-          border: 1px solid rgba(255,255,255,0.1); 
-          border-radius: 12px; 
-          padding: 15px; 
-          color: #fff; 
-          display: flex; 
-          flex-direction: column; 
-          width: 100%; 
-          text-align: center;
-          transition: transform 0.2s;
-        `;
+        card.style.cssText = "cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:15px; color:#fff; display:flex; flex-direction:column; width:100%; transition: 0.2s;";
 
-        card.onmouseenter = () => card.style.transform = 'scale(1.03)';
+        card.onmouseenter = () => card.style.transform = 'scale(1.05)';
         card.onmouseleave = () => card.style.transform = 'scale(1)';
-        
+
         card.innerHTML = `
-          <div style="height:60px; display:flex; align-items:center; justify-content:center; font-size:30px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:10px;">🎮</div>
-          <div style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${game.title}</div>
-          <div style="font-size:12px; opacity:0.6; margin-top:4px;">${game.cat}</div>
+          <div style="font-size:32px; margin-bottom:8px;">🎮</div>
+          <div style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${game.title}</div>
+          <div style="font-size:12px; opacity:0.5;">${game.cat}</div>
         `;
 
         card.onclick = () => {
-          // FIXED: Corrected the broken string syntax here
+          // Send a clean, normal URL
           const gameUrl = `https://db.duckmath.org{game.id}/`;
           const proxiedUrl = getProxyUrl(gameUrl);
           
@@ -84,8 +72,7 @@ function getProxyUrl(url) {
     search.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
       const filtered = GAMES.filter(g => 
-        g.title.toLowerCase().includes(q) || 
-        g.cat.toLowerCase().includes(q)
+        g.title.toLowerCase().includes(q) || g.cat.toLowerCase().includes(q)
       );
       render(filtered);
     });
