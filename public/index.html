@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
+		/>
+		<title>Plazma | Research Portal</title>
+		<link rel="shortcut icon" href="favicon.webp" />
+
+		<!-- Core Scramjet & Transport Scripts -->
+		<script src="/scram/scramjet.all.js"></script>
+		<script src="/baremux/index.js"></script>
+		<script src="register-sw.js" defer></script>
+		<script src="search.js" defer></script>
+		<script src="index.js" defer></script>
+
+		<style>
+			:root {
+				--bg-gradient: linear-gradient(135deg, #f3e5f5 0%, #fce4ec 100%);
+				--glass-bg: rgba(255, 255, 255, 0.45);
+				--accent-purple: #ce93d8;
+				--accent-pink: #f06292;
+				--text-main: #4a148c;
+				--input-border: #e1bee7;
+			}
+
+			body {
+				margin: 0;
+				padding: 0;
+				min-height: 100vh;
+				overflow: hidden;
+				font-family: "Segoe UI", system-ui, sans-serif;
+				background: var(--bg-gradient);
+				color: var(--text-main);
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+			}
+
+			.container {
+				background: var(--glass-bg);
+				backdrop-filter: blur(15px);
+				-webkit-backdrop-filter: blur(15px);
+				padding: 3rem 2rem;
+				border-radius: 40px;
+				border: 1px solid rgba(255, 255, 255, 0.5);
+				box-shadow: 0 15px 35px rgba(225, 190, 231, 0.5);
+				text-align: center;
+				width: 90%;
+				max-width: 550px;
+				z-index: 1;
+				position: relative;
+			}
+
+			.logo-wrapper h1 {
+				font-size: 4rem;
+				margin: 0;
+				font-weight: 800;
+				letter-spacing: -3px;
+				background: linear-gradient(45deg, #7b1fa2, #ec407a);
+				-webkit-background-clip: text;
+				background-clip: text;
+				-webkit-text-fill-color: transparent;
+			}
+
+			.main-logo {
+				width: 150px;
+				height: auto;
+				margin: 10px 0;
+				filter: drop-shadow(0 0 15px rgba(206, 147, 216, 0.8));
+			}
+
+			#sj-form {
+				width: 100%;
+				margin-top: 1rem;
+			}
+			#sj-address {
+				width: 100%;
+				padding: 18px 30px;
+				border-radius: 50px;
+				border: 2px solid var(--input-border);
+				background: white;
+				font-size: 1.1rem;
+				outline: none;
+				box-sizing: border-box;
+				transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			}
+			#sj-address:focus {
+				border-color: var(--accent-pink);
+				box-shadow: 0 10px 25px rgba(240, 98, 146, 0.3);
+				transform: scale(1.02);
+			}
+
+			/* Settings Button */
+			#settings-btn {
+				position: absolute;
+				top: 25px;
+				right: 25px;
+				background: none;
+				border: none;
+				font-size: 1.5rem;
+				cursor: pointer;
+				opacity: 0.6;
+				transition: 0.3s;
+			}
+			#settings-btn:hover {
+				opacity: 1;
+				transform: rotate(45deg);
+			}
+
+			/* Games Button */
+			#games-nav-btn {
+				position: absolute;
+				top: 25px;
+				left: 25px;
+				text-decoration: none;
+				font-size: 1.5rem;
+				cursor: pointer;
+				opacity: 0.6;
+				transition: 0.3s;
+			}
+			#games-nav-btn:hover {
+				opacity: 1;
+				transform: scale(1.2);
+			}
+
+			/* Settings Modal */
+			#settings-modal {
+				display: none;
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(0, 0, 0, 0.4);
+				z-index: 10000;
+				align-items: center;
+				justify-content: center;
+			}
+			.modal-content {
+				background: white;
+				padding: 2rem;
+				border-radius: 30px;
+				width: 90%;
+				max-width: 350px;
+				text-align: left;
+				box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+			}
+			.modal-content h2 {
+				margin-top: 0;
+				color: var(--accent-purple);
+			}
+			.setting-item {
+				margin-bottom: 1.5rem;
+			}
+			.setting-item label {
+				display: block;
+				font-weight: 600;
+				margin-bottom: 5px;
+				font-size: 0.9rem;
+			}
+			.setting-item input[type="text"] {
+				width: 100%;
+				padding: 10px;
+				border-radius: 10px;
+				border: 1px solid var(--input-border);
+				outline: none;
+			}
+			.save-btn {
+				width: 100%;
+				padding: 12px;
+				border-radius: 15px;
+				border: none;
+				cursor: pointer;
+				background: var(--accent-purple);
+				color: white;
+				font-weight: bold;
+			}
+
+			footer {
+				position: absolute;
+				bottom: 20px;
+				width: 100%;
+				text-align: center;
+				font-size: 0.8rem;
+				opacity: 0.6;
+			}
+			footer a {
+				color: var(--text-main);
+				text-decoration: none;
+				margin: 0 10px;
+				font-weight: 600;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<a href="games.html" id="games-nav-btn" title="Games" target="_blank" rel="noopener noreferrer">🎮</a>
+			<button id="settings-btn" title="Settings">⚙️</button>
+			<div class="logo-wrapper">
+				<h1>PLAZMA</h1>
+				<img src="logo.png" class="main-logo" alt="Plazma Icon" />
+			</div>
+			<div class="desc">
+				<p>Private 2026 portal. Encrypted with Scramjet technology.</p>
+			</div>
+			<form id="sj-form">
+				<input
+					id="sj-search-engine"
+					value="https://duckduckgo.com"
+					type="hidden"
+				/>
+				<input
+					id="sj-address"
+					type="text"
+					placeholder="Search freely..."
+					autocomplete="off"
+					autofocus
+				/>
+			</form>
+			<div class="error-log">
+				<p id="sj-error"></p>
+				<pre id="sj-error-code"></pre>
+			</div>
+		</div>
+
+		<!-- Settings Modal -->
+		<div id="settings-modal">
+			<div class="modal-content">
+				<h2>Settings</h2>
+				<div class="setting-item">
+					<label>WISP Server URL:</label>
+					<input
+						id="wisp-url"
+						type="text"
+						placeholder="wss://://your-wisp.com"
+					/>
+				</div>
+				<div class="setting-item">
+					<label style="display: flex; align-items: center; gap: 10px">
+						<input id="about-blank-toggle" type="checkbox" /> Open in
+						about:blank
+					</label>
+				</div>
+				<button id="save-settings" class="save-btn">Save & Close</button>
+			</div>
+		</div>
+
+		<footer>
+			<div>
+				<a href="credits.html">Credits</a><span>&bull;</span
+				><a href="https://github.com">Source</a>
+			</div>
+			<div style="margin-top: 8px"><span>Plazma &copy; 2026</span></div>
+		</footer>
+	</body>
+</html>
