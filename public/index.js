@@ -227,9 +227,6 @@ async function probeProxyHealth() {
 		return { ok: false, error: e };
 	}
 }
-
-// Replace the previous games panel with an enhanced fixed panel (no dragging), engine toggle and many features
-(function addEnhancedPanel(){
 	const CSS = `
 		#games-btn { position: fixed; left: 18px; top: 18px; z-index:11000;
 			background: linear-gradient(45deg,#7b1fa2,#ec407a); color:#fff;
@@ -507,4 +504,5 @@ async function probeProxyHealth() {
 		const cachedMax = localStorage.getItem(KEY_MAX);
 		if(cachedMax) maxPagesInput.value = cachedMax;
 	})();
-})();
+});
+
