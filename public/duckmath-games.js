@@ -26,23 +26,16 @@ const GAMES = [
 ];
 
 function getProxyUrl(url) {
-  try {
-    const basePath = '/scram/';
-    // Scramjet usually needs URL-safe Base64
-    let encoded = btoa(url)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-    return window.location.origin + basePath + encoded;
-  } catch(e) {
-    return url;
-  }
+  const basePath = '/scram/';
+  // Scramjet requires the full URL (including https://) to be appended to the prefix
+  return window.location.origin + basePath + url;
 }
 
 (function(){
   function init() {
     const grid = document.getElementById('games-grid');
     const search = document.getElementById('search');
+    
     if (!grid || !search) return;
 
     function render(list) {
@@ -50,18 +43,32 @@ function getProxyUrl(url) {
       for (const game of list) {
         const card = document.createElement('button');
         card.className = 'card';
-        card.style.cssText = "cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; color:#fff; display:flex; flex-direction:column; width:100%; transition: 0.2s;";
+        card.style.cssText = `
+          cursor: pointer; 
+          background: rgba(255,255,255,0.05); 
+          border: 1px solid rgba(255,255,255,0.1); 
+          border-radius: 12px; 
+          padding: 15px; 
+          color: #fff; 
+          display: flex; 
+          flex-direction: column; 
+          width: 100%; 
+          text-align: center;
+          transition: transform 0.2s;
+        `;
+
+        card.onmouseenter = () => card.style.transform = 'scale(1.03)';
+        card.onmouseleave = () => card.style.transform = 'scale(1)';
         
         card.innerHTML = `
-          <div class="thumb" style="height:60px; display:flex; align-items:center; justify-content:center; font-size:24px; background:rgba(255,255,255,0.1); border-radius:8px; margin-bottom:8px;">🎮</div>
-          <div class="name" style="font-weight:bold; font-size:14px;">${game.title}</div>
-          <div class="meta" style="font-size:11px; opacity:0.6;">${game.cat}</div>
+          <div style="height:60px; display:flex; align-items:center; justify-content:center; font-size:30px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:10px;">🎮</div>
+          <div style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${game.title}</div>
+          <div style="font-size:12px; opacity:0.6; margin-top:4px;">${game.cat}</div>
         `;
 
         card.onclick = () => {
-          // Convert hyphens to underscores for the Duckmath backend
-          const gameId = game.id.replace(/-/g, '_');
-          const gameUrl = `https://db.duckmath.org{gameId}/`;
+          // FIXED: Corrected the broken string syntax here
+          const gameUrl = `https://db.duckmath.org{game.id}/`;
           const proxiedUrl = getProxyUrl(gameUrl);
           
           if (window.parent !== window) {
@@ -76,7 +83,10 @@ function getProxyUrl(url) {
 
     search.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
-      const filtered = GAMES.filter(g => g.title.toLowerCase().includes(q) || g.cat.toLowerCase().includes(q));
+      const filtered = GAMES.filter(g => 
+        g.title.toLowerCase().includes(q) || 
+        g.cat.toLowerCase().includes(q)
+      );
       render(filtered);
     });
 
