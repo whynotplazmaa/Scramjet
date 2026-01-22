@@ -25,6 +25,17 @@ const GAMES = [
   { id: 'undertale-yellow', title: 'Undertale Yellow', cat: 'RPG' }
 ];
 
+function getProxyUrl(url) {
+  try {
+    const engine = localStorage.getItem('proxy-engine') || 'scramjet';
+    const basePath = localStorage.getItem('proxy-path') || '/scram/';
+    const path = basePath.startsWith('/') ? basePath : '/' + basePath;
+    return window.location.origin + path + btoa(url);
+  } catch(e) {
+    return url;
+  }
+}
+
 (function(){
   function init() {
     const grid = document.getElementById('games-grid');
@@ -40,16 +51,29 @@ const GAMES = [
     function render(list) {
       grid.innerHTML = '';
       for (const game of list) {
-        const card = document.createElement('a');
-        card.href = `https://duckmath.org/class/${game.id}`;
-        card.target = '_blank';
-        card.rel = 'noopener noreferrer';
+        const card = document.createElement('button');
         card.className = 'card';
+        card.style.cursor = 'pointer';
+        card.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))';
+        card.style.border = '1px solid rgba(255,255,255,0.1)';
+        card.style.borderRadius = '12px';
+        card.style.padding = '12px';
+        card.style.color = '#fff';
+        card.style.textDecoration = 'none';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
         card.innerHTML = `
           <div class="thumb">${game.title.substring(0, 1).toUpperCase()}</div>
           <div class="name">${game.title}</div>
           <div class="meta">${game.cat}</div>
         `;
+        card.onclick = () => {
+          const gameUrl = `https://duckmath.org/class/${game.id}`;
+          const proxiedUrl = getProxyUrl(gameUrl);
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: 'openGame', url: proxiedUrl, title: game.title }, '*');
+          }
+        };
         grid.appendChild(card);
       }
     }

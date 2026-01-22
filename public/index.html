@@ -256,12 +256,15 @@
 
 		<!-- Games Window -->
 		<div id="games-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
-			<div style="background:linear-gradient(180deg,#071026 0%, #07182a 100%);border-radius:20px;width:90%;height:90%;max-width:1000px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid rgba(123,31,162,0.3);">
+			<div style="background:linear-gradient(180deg,#071026 0%, #07182a 100%);border-radius:20px;width:90%;height:90%;max-width:1400px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid rgba(123,31,162,0.3);">
 				<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(123,31,162,0.2);">
-					<div style="font-size:18px;font-weight:700;color:#fff;">🎮 DuckMath Games</div>
+					<div style="font-size:18px;font-weight:700;color:#fff;" id="games-title">🎮 DuckMath Games</div>
 					<button id="games-close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#fff;opacity:0.6;">✕</button>
 				</div>
-				<iframe id="games-iframe" src="duckmath-games.html" style="flex:1;border:0;background:#000;"></iframe>
+				<div style="display:flex;flex:1;gap:12px;padding:12px;overflow:hidden;">
+					<iframe id="games-iframe" src="duckmath-games.html" style="flex:1;border:0;background:#000;border-radius:8px;"></iframe>
+					<iframe id="game-player-iframe" style="flex:1;border:0;background:#000;border-radius:8px;display:none;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock allow-presentation" allow="fullscreen; autoplay; geolocation; microphone; camera; encrypted-media; picture-in-picture"></iframe>
+				</div>
 			</div>
 		</div>
 
@@ -278,18 +281,36 @@
 			const gamesBtn = document.getElementById('games-nav-btn');
 			const gamesModal = document.getElementById('games-modal');
 			const gamesClose = document.getElementById('games-close');
+			const gamesIframe = document.getElementById('games-iframe');
+			const gamePlayerIframe = document.getElementById('game-player-iframe');
+			const gamesTitle = document.getElementById('games-title');
 			
 			gamesBtn.addEventListener('click', () => {
 				gamesModal.style.display = 'flex';
+				gamesIframe.style.display = 'block';
+				gamePlayerIframe.style.display = 'none';
+				gamesTitle.textContent = '🎮 DuckMath Games';
 			});
 			
 			gamesClose.addEventListener('click', () => {
 				gamesModal.style.display = 'none';
+				gamePlayerIframe.src = 'about:blank';
 			});
 			
 			gamesModal.addEventListener('click', (e) => {
 				if (e.target === gamesModal) {
 					gamesModal.style.display = 'none';
+					gamePlayerIframe.src = 'about:blank';
+				}
+			});
+			
+			// Handle game opening from iframe
+			window.addEventListener('message', (e) => {
+				if (e.data && e.data.type === 'openGame') {
+					gamesIframe.style.display = 'none';
+					gamePlayerIframe.style.display = 'block';
+					gamePlayerIframe.src = e.data.url;
+					gamesTitle.textContent = '▶ ' + e.data.title;
 				}
 			});
 		</script>
