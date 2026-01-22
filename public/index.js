@@ -228,7 +228,6 @@ async function probeProxyHealth() {
 	}
 }
 
-		.game-card { background: #fff; border-radius:10px; padding:8px; cursor:pointer; display:flex; flex-direction:column; gap:8px; border:1px solid rgba(0,0,0,0.06); min-height:160px; color:#000 }
 		.thumb { height:110px; border-radius:8px; overflow:hidden; background:#f5f5f5; display:flex; align-items:center; justify-content:center }
 		.thumb img{ width:100%; height:100%; object-fit:cover; display:block }
 		.name{ color:#000; font-size:13px; font-weight:600; line-height:1.2 }
