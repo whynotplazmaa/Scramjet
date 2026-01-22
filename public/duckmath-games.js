@@ -72,7 +72,7 @@ function getProxyUrl(url) {
 
         card.onclick = () => {
           // MUST include https:// and the trailing slash for the router to see it as a valid URL
-          const gameUrl = `https://db.duckmath.org{game.id}/`;
+          const gameUrl = `https://db.duckmath.org/${game.id}/`;
           const proxiedUrl = getProxyUrl(gameUrl);
           
           if (window.parent !== window) {
