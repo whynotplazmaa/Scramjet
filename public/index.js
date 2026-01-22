@@ -227,24 +227,7 @@ async function probeProxyHealth() {
 		return { ok: false, error: e };
 	}
 }
-	const CSS = `
-		#games-btn { position: fixed; left: 18px; top: 18px; z-index:11000;
-			background: linear-gradient(45deg,#7b1fa2,#ec407a); color:#fff;
-			border: none; padding:10px 12px; border-radius:12px; cursor:pointer;
-			box-shadow: 0 8px 24px rgba(124,58,237,0.18); font-weight:700;
-		}
-		#games-panel { position: fixed; left: 60px; top: 60px; width: 920px; max-width: calc(100vw - 120px);
-			height: 70vh; max-height: calc(100vh - 120px); background: rgba(255,255,255,0.95);
-			backdrop-filter: blur(6px); border-radius: 14px; border: 1px solid rgba(0,0,0,0.08);
-			box-shadow: 0 20px 60px rgba(2,6,23,0.08); z-index: 10999; display: none; flex-direction: column; overflow: hidden;
-			color: #000;
-		}
-		#games-panel.show{ display:flex; }
-		#games-panel .header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background: rgba(255,255,255,0.98); gap:12px; flex-wrap:wrap; border-bottom: 1px solid rgba(0,0,0,0.04) }
-		#games-panel .title { color: #000; font-weight:800; letter-spacing:-0.5px }
-		.controls-group { display:flex; gap:8px; align-items:center }
-		.panel-input { background: #fff; border: 1px solid rgba(0,0,0,0.08); color:#000; padding:6px 8px; border-radius:8px; }
-		#games-panel .grid { padding:12px; display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; overflow:auto; flex:1; background: transparent; }
+
 		.game-card { background: #fff; border-radius:10px; padding:8px; cursor:pointer; display:flex; flex-direction:column; gap:8px; border:1px solid rgba(0,0,0,0.06); min-height:160px; color:#000 }
 		.thumb { height:110px; border-radius:8px; overflow:hidden; background:#f5f5f5; display:flex; align-items:center; justify-content:center }
 		.thumb img{ width:100%; height:100%; object-fit:cover; display:block }
