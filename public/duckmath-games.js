@@ -1,6 +1,6 @@
 const GAMES = [
   { id: 'golf-orbit', title: 'Golf Orbit', cat: 'Sports' },
-  
+  { id: 'steal-a-brainrot', title: 'Steal A Brainrot', cat: 'Casual' },
   { id: 'highway-traffic', title: 'Highway Traffic', cat: 'Driving' },
   { id: 'escape-car', title: 'Escape Car', cat: 'Driving' },
   { id: 'race-survival-arena-king', title: 'Race Survival Arena King', cat: 'Racing' },
@@ -25,85 +25,64 @@ const GAMES = [
   { id: 'undertale-yellow', title: 'Undertale Yellow', cat: 'RPG' }
 ];
 
-/**
- * Encodes the URL for the Scramjet proxy.
- * Scramjet uses Base64 to hide the target URL from filters.
- */
 function getProxyUrl(url) {
   try {
     const basePath = '/scram/';
-    // Using encodeURIComponent first prevents btoa from failing on Unicode/special chars
-    const encoded = btoa(encodeURIComponent(url));
+    // Scramjet usually needs URL-safe Base64
+    let encoded = btoa(url)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
     return window.location.origin + basePath + encoded;
-  } catch (e) {
-    console.warn('Scram encoding error:', e);
+  } catch(e) {
     return url;
   }
 }
 
-(function() {
+(function(){
   function init() {
     const grid = document.getElementById('games-grid');
     const search = document.getElementById('search');
-
     if (!grid || !search) return;
 
     function render(list) {
       grid.innerHTML = '';
-      list.forEach(game => {
-        const card = document.createElement('div');
-        card.className = 'game-card';
-        // Basic styling to ensure visibility
-        card.style.cssText = `
-          cursor: pointer;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          transition: transform 0.2s;
-        `;
-
+      for (const game of list) {
+        const card = document.createElement('button');
+        card.className = 'card';
+        card.style.cssText = "cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px; color:#fff; display:flex; flex-direction:column; width:100%; transition: 0.2s;";
+        
         card.innerHTML = `
-          <div style="font-size: 24px; margin-bottom: 8px;">🎮</div>
-          <div style="font-weight: bold; color: white;">${game.title}</div>
-          <div style="font-size: 12px; color: #888;">${game.cat}</div>
+          <div class="thumb" style="height:60px; display:flex; align-items:center; justify-content:center; font-size:24px; background:rgba(255,255,255,0.1); border-radius:8px; margin-bottom:8px;">🎮</div>
+          <div class="name" style="font-weight:bold; font-size:14px;">${game.title}</div>
+          <div class="meta" style="font-size:11px; opacity:0.6;">${game.cat}</div>
         `;
 
         card.onclick = () => {
-          // Standard Duckmath structure uses hyphens, not underscores
-          const gameUrl = `https://db.duckmath.org{game.id}/`;
+          // Convert hyphens to underscores for the Duckmath backend
+          const gameId = game.id.replace(/-/g, '_');
+          const gameUrl = `https://db.duckmath.org{gameId}/`;
           const proxiedUrl = getProxyUrl(gameUrl);
-
+          
           if (window.parent !== window) {
-            window.parent.postMessage({
-              type: 'openGame',
-              url: proxiedUrl,
-              title: game.title
-            }, '*');
+            window.parent.postMessage({ type: 'openGame', url: proxiedUrl, title: game.title }, '*');
           } else {
             window.location.href = proxiedUrl;
           }
         };
-
         grid.appendChild(card);
-      });
+      }
     }
 
     search.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
-      const filtered = GAMES.filter(g =>
-        g.title.toLowerCase().includes(q) ||
-        g.cat.toLowerCase().includes(q)
-      );
+      const filtered = GAMES.filter(g => g.title.toLowerCase().includes(q) || g.cat.toLowerCase().includes(q));
       render(filtered);
     });
 
     render(GAMES);
   }
-
+  
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
