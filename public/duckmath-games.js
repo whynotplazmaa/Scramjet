@@ -25,8 +25,12 @@ const GAMES = [
   { id: 'undertale-yellow', title: 'Undertale Yellow', cat: 'RPG' }
 ];
 
+/**
+ * Clean Routing for Scramjet 2026
+ * Appends a raw URL to the prefix. 
+ * Ensure your Service Worker is active and bare-mux is connected.
+ */
 function getProxyUrl(url) {
-  // Scramjet's Service Worker intercepts anything starting with /scram/
   const basePath = '/scram/';
   return window.location.origin + basePath + url;
 }
@@ -40,10 +44,22 @@ function getProxyUrl(url) {
 
     function render(list) {
       grid.innerHTML = '';
-      for (const game of list) {
+      list.forEach(game => {
         const card = document.createElement('button');
         card.className = 'card';
-        card.style.cssText = "cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:15px; color:#fff; display:flex; flex-direction:column; width:100%; transition: 0.2s;";
+        card.style.cssText = `
+          cursor: pointer; 
+          background: rgba(255,255,255,0.05); 
+          border: 1px solid rgba(255,255,255,0.1); 
+          border-radius: 12px; 
+          padding: 15px; 
+          color: #fff; 
+          display: flex; 
+          flex-direction: column; 
+          width: 100%; 
+          text-align: center;
+          transition: transform 0.2s;
+        `;
 
         card.onmouseenter = () => card.style.transform = 'scale(1.05)';
         card.onmouseleave = () => card.style.transform = 'scale(1)';
@@ -55,7 +71,7 @@ function getProxyUrl(url) {
         `;
 
         card.onclick = () => {
-          // Send a clean, normal URL
+          // MUST include https:// and the trailing slash for the router to see it as a valid URL
           const gameUrl = `https://db.duckmath.org{game.id}/`;
           const proxiedUrl = getProxyUrl(gameUrl);
           
@@ -66,7 +82,7 @@ function getProxyUrl(url) {
           }
         };
         grid.appendChild(card);
-      }
+      });
     }
 
     search.addEventListener('input', (e) => {
