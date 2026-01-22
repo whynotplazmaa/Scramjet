@@ -66,7 +66,7 @@ function getProxyUrl(url) {
           <div class="meta">${game.cat}</div>
         `;
         card.onclick = () => {
-          const gameUrl = `https://db.duckmath.org/html/${game.id.replace(/-/g, '_')}/`;
+          const gameUrl = `https://db.duckmath.org/class/${game.id.replace(/-/g, '_')}/`;
           const proxiedUrl = getProxyUrl(gameUrl);
           if (window.parent !== window) {
             window.parent.postMessage({ type: 'openGame', url: proxiedUrl, title: game.title }, '*');
