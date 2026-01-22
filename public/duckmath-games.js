@@ -1,6 +1,6 @@
 const GAMES = [
   { id: 'golf-orbit', title: 'Golf Orbit', cat: 'Sports' },
-  { id: 'steal-a-brainrot', title: 'Steal A Brainrot', cat: 'Casual' },
+  
   { id: 'highway-traffic', title: 'Highway Traffic', cat: 'Driving' },
   { id: 'escape-car', title: 'Escape Car', cat: 'Driving' },
   { id: 'race-survival-arena-king', title: 'Race Survival Arena King', cat: 'Racing' },
@@ -25,70 +25,88 @@ const GAMES = [
   { id: 'undertale-yellow', title: 'Undertale Yellow', cat: 'RPG' }
 ];
 
+/**
+ * Encodes the URL for the Scramjet proxy.
+ * Scramjet uses Base64 to hide the target URL from filters.
+ */
 function getProxyUrl(url) {
   try {
     const basePath = '/scram/';
-    return window.location.origin + basePath + btoa(url);
-  } catch(e) {
+    // Using encodeURIComponent first prevents btoa from failing on Unicode/special chars
+    const encoded = btoa(encodeURIComponent(url));
+    return window.location.origin + basePath + encoded;
+  } catch (e) {
+    console.warn('Scram encoding error:', e);
     return url;
   }
 }
 
-(function(){
+(function() {
   function init() {
     const grid = document.getElementById('games-grid');
     const search = document.getElementById('search');
-    
-    if (!grid || !search) {
-      console.error('Grid or search element not found');
-      return;
-    }
-    
-    let filtered = GAMES;
+
+    if (!grid || !search) return;
 
     function render(list) {
       grid.innerHTML = '';
-      for (const game of list) {
-        const card = document.createElement('button');
-        card.className = 'card';
-        card.style.cursor = 'pointer';
-        card.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))';
-        card.style.border = '1px solid rgba(255,255,255,0.1)';
-        card.style.borderRadius = '12px';
-        card.style.padding = '12px';
-        card.style.color = '#fff';
-        card.style.textDecoration = 'none';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-        card.innerHTML = `
-          <div class="thumb">${game.title.substring(0, 1).toUpperCase()}</div>
-          <div class="name">${game.title}</div>
-          <div class="meta">${game.cat}</div>
+      list.forEach(game => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        // Basic styling to ensure visibility
+        card.style.cssText = `
+          cursor: pointer;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          transition: transform 0.2s;
         `;
+
+        card.innerHTML = `
+          <div style="font-size: 24px; margin-bottom: 8px;">🎮</div>
+          <div style="font-weight: bold; color: white;">${game.title}</div>
+          <div style="font-size: 12px; color: #888;">${game.cat}</div>
+        `;
+
         card.onclick = () => {
-          const gameUrl = `https://db.duckmath.org/class/${game.id.replace(/-/g, '_')}/`;
+          // Standard Duckmath structure uses hyphens, not underscores
+          const gameUrl = `https://db.duckmath.org{game.id}/`;
           const proxiedUrl = getProxyUrl(gameUrl);
+
           if (window.parent !== window) {
-            window.parent.postMessage({ type: 'openGame', url: proxiedUrl, title: game.title }, '*');
+            window.parent.postMessage({
+              type: 'openGame',
+              url: proxiedUrl,
+              title: game.title
+            }, '*');
+          } else {
+            window.location.href = proxiedUrl;
           }
         };
+
         grid.appendChild(card);
-      }
+      });
     }
 
     search.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
-      filtered = GAMES.filter(g => g.title.toLowerCase().includes(q) || g.cat.toLowerCase().includes(q));
+      const filtered = GAMES.filter(g =>
+        g.title.toLowerCase().includes(q) ||
+        g.cat.toLowerCase().includes(q)
+      );
       render(filtered);
     });
 
     render(GAMES);
   }
-  
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
 })();
-
