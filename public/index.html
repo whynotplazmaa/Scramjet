@@ -198,7 +198,7 @@
 	</head>
 	<body>
 		<div class="container">
-			<a href="duckmath-games.html" id="games-nav-btn" title="DuckMath Games" target="_blank" rel="noopener noreferrer">🎮</a>
+			<button id="games-nav-btn" title="DuckMath Games">🎮</button>
 			<button id="settings-btn" title="Settings">⚙️</button>
 			<div class="logo-wrapper">
 				<h1>PLAZMA</h1>
@@ -249,6 +249,17 @@
 			</div>
 		</div>
 
+		<!-- Games Window -->
+		<div id="games-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+			<div style="background:linear-gradient(180deg,#071026 0%, #07182a 100%);border-radius:20px;width:90%;height:90%;max-width:1000px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid rgba(123,31,162,0.3);">
+				<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(123,31,162,0.2);">
+					<div style="font-size:18px;font-weight:700;color:#fff;">🎮 DuckMath Games</div>
+					<button id="games-close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#fff;opacity:0.6;">✕</button>
+				</div>
+				<iframe id="games-iframe" src="duckmath-games.html" style="flex:1;border:0;background:#000;"></iframe>
+			</div>
+		</div>
+
 		<footer>
 			<div>
 				<a href="credits.html">Credits</a><span>&bull;</span
@@ -256,5 +267,26 @@
 			</div>
 			<div style="margin-top: 8px"><span>Plazma &copy; 2026</span></div>
 		</footer>
+
+		<script>
+			// Games modal
+			const gamesBtn = document.getElementById('games-nav-btn');
+			const gamesModal = document.getElementById('games-modal');
+			const gamesClose = document.getElementById('games-close');
+			
+			gamesBtn.addEventListener('click', () => {
+				gamesModal.style.display = 'flex';
+			});
+			
+			gamesClose.addEventListener('click', () => {
+				gamesModal.style.display = 'none';
+			});
+			
+			gamesModal.addEventListener('click', (e) => {
+				if (e.target === gamesModal) {
+					gamesModal.style.display = 'none';
+				}
+			});
+		</script>
 	</body>
 </html>
