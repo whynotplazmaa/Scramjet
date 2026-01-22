@@ -27,10 +27,8 @@ const GAMES = [
 
 function getProxyUrl(url) {
   try {
-    const engine = localStorage.getItem('proxy-engine') || 'scramjet';
-    const basePath = localStorage.getItem('proxy-path') || '/scram/';
-    const path = basePath.startsWith('/') ? basePath : '/' + basePath;
-    return window.location.origin + path + btoa(url);
+    const basePath = '/scram/';
+    return window.location.origin + basePath + btoa(url);
   } catch(e) {
     return url;
   }
