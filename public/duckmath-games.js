@@ -26,13 +26,26 @@ const GAMES = [
 ];
 
 /**
- * Clean Routing for Scramjet 2026
- * Appends a raw URL to the prefix. 
- * Ensure your Service Worker is active and bare-mux is connected.
+ * Encode URL for Scramjet proxy using base64
+ */
+function encodeB64(str) {
+  try { 
+    return btoa(unescape(encodeURIComponent(str))); 
+  } catch (e) { 
+    return btoa(str); 
+  }
+}
+
+/**
+ * Get proxied URL with base64 encoding
  */
 function getProxyUrl(url) {
   const basePath = '/scram/';
-  return window.location.origin + basePath + url;
+  const encoded = encodeB64(url);
+  console.log('Original URL:', url);
+  console.log('Encoded URL:', encoded);
+  console.log('Final proxy URL:', window.location.origin + basePath + encoded);
+  return window.location.origin + basePath + encoded;
 }
 
 (function(){
@@ -71,8 +84,7 @@ function getProxyUrl(url) {
         `;
 
         card.onclick = () => {
-          // MUST include https:// and the trailing slash for the router to see it as a valid URL
-          const gameUrl = `https://db.duckmath.org/${game.id}/`;
+          const gameUrl = `https://duckmath.org/class/${game.id}`;
           const proxiedUrl = getProxyUrl(gameUrl);
           
           if (window.parent !== window) {
